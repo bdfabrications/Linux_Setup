@@ -162,6 +162,9 @@ echo "Available custom commands:"
 echo "  update-sys              - Update system packages (needs sudo password)"
 echo "  backup_dir.sh <dir>     - Create backup of <dir> in ~/backups"
 echo "  new_pyproject.sh <Name> - Create basic Python project structure"
+echo "  rgf.sh <pattern> [path] - Search for text using ripgrep"
+echo "  serve_here.sh [port]    - Start simple web server in current directory"
+
 echo "" # Add blank line after list
 
 # --- End Custom Welcome Message ---
