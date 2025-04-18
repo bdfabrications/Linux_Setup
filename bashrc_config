@@ -99,7 +99,7 @@ fi
 #fi
 
 # Initialize Oh My Posh prompt
-eval "$(/usr/local/bin/oh-my-posh init bash --config '/root/.poshthemes/jandedobbeleer.omp.json')"
+eval "$(/usr/local/bin/oh-my-posh init bash --config "$HOME/.poshthemes/jandedobbeleer.omp.json")"
 
 # Add ~/bin to PATH if it exists and isn't already there
 if [ -d "$HOME/bin" ] && [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
