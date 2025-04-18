@@ -1,0 +1,62 @@
+#!/bin/bash
+# /etc/update-motd.d/50-welcome-message
+# Displays a custom welcome message with ASCII art, greeting, and weather.
+
+# --- Configuration ---
+LOCATION="CanyonLake,TX" # <--- IMPORTANT: Change this if not correct!
+FIGLET_TEXT="Terminal"    # <--- Text for the figlet banner
+
+# --- Dependencies Check ---
+FIGLET_CMD=$(command -v figlet)
+CURL_CMD=$(command -v curl)
+
+# --- 1. Display ASCII Art Banner ---
+if [ -x "$FIGLET_CMD" ]; then
+    # Use figlet if available
+    $FIGLET_CMD "$FIGLET_TEXT"
+else
+    # Fallback simple text or paste your own ASCII art here
+    echo "============================="
+    echo "      Welcome Back!"
+    echo "============================="
+    # Example of pasted art:
+    # cat << "EOF"
+    # Paste
+    # Your
+    # Art Here
+    # EOF
+fi
+echo "" # Add a blank line
+
+# --- 2. Display Time-Based Greeting ---
+CURRENT_HOUR=$(date +%H)
+USERNAME=$(whoami) # Get current username (likely 'root')
+
+GREETING="Good evening" # Default
+if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
+    GREETING="Good morning"
+elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
+    GREETING="Good afternoon"
+fi
+
+echo "$GREETING, $USERNAME!"
+echo "" # Add a blank line
+
+# --- 3. Display Weather ---
+if [ -x "$CURL_CMD" ]; then
+    echo "Checking weather for $LOCATION..."
+    # Use wttr.in with a simple format and timeouts
+    weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
+
+    if [ $? -eq 0 ] && [ -n "$weather" ]; then
+        echo "$weather"
+    else
+        echo "Could not retrieve weather information."
+    fi
+else
+    echo "Weather requires 'curl'. Please install it."
+fi
+
+echo "" # Add a final blank line
+
+exit 0
