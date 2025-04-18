@@ -106,3 +106,51 @@ if [ -d "$HOME/bin" ] && [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
     PATH="$HOME/bin:$PATH"
 fi
 export PATH
+
+# ... (existing content of bashrc_config like Oh My Posh init, PATH export) ...
+
+# --- Custom Welcome Message ---
+echo "" # Start with a blank line
+
+# Configuration
+LOCATION="78070"
+FIGLET_TEXT="Greetings"
+
+# Dependencies Check
+FIGLET_CMD=$(command -v figlet)
+CURL_CMD=$(command -v curl)
+
+# 1. Display ASCII Art Banner
+if [ -x "$FIGLET_CMD" ]; then
+    $FIGLET_CMD "$FIGLET_TEXT"
+else
+    echo "============================="
+    echo "      Welcome Back!"
+    echo "============================="
+fi
+echo "" 
+
+# 2. Display Time-Based Greeting
+CURRENT_HOUR=$(date +%H)
+USERNAME=$(whoami) 
+GREETING="Good evening" 
+if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
+    GREETING="Good morning"
+elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
+    GREETING="Good afternoon"
+fi
+echo "$GREETING, $USERNAME!"
+echo ""
+
+# 3. Display Weather
+if [ -x "$CURL_CMD" ]; then
+    # echo "Checking weather for $LOCATION..." # Optional: Can remove this line for cleaner output
+    weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
+    if [ $? -eq 0 ] && [ -n "$weather" ]; then
+        echo "$weather"
+    # else # Optional: Can remove error message for cleaner output
+        # echo "Could not retrieve weather information."
+    fi
+fi
+echo "" # Final blank line before prompt appears
+# --- End Custom Welcome Message ---

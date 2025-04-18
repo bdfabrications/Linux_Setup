@@ -45,7 +45,7 @@ link_file "$DOTFILES_DIR/bashrc_config"      "$HOME/.bashrc"
 link_file "$DOTFILES_DIR/poshthemes"         "$HOME/.poshthemes"
 link_file "$DOTFILES_DIR/config_nvim"        "$HOME/.config/nvim"
 link_file "$DOTFILES_DIR/bin"                "$HOME/bin"
-link_file "$DOTFILES_DIR/bin/50-welcome-message" "/etc/update-motd.d/50-welcome-message"
+#link_file "$DOTFILES_DIR/bin/50-welcome-message" "/etc/update-motd.d/50-welcome-message"
 # Add other files/dirs to link here if needed
 
 echo "Symlinking complete. You may need to run 'source $HOME/.bashrc'."
