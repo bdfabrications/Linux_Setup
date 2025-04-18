@@ -155,5 +155,13 @@ if [ -x "$CURL_CMD" ]; then
         # echo "Could not retrieve weather information."
     fi
 fi
-echo "" # Final blank line before prompt appears
+echo ""
+
+# --- Handy Scripts ---
+echo "Available custom commands:"
+echo "  update-sys              - Update system packages (needs sudo password)"
+echo "  backup_dir.sh <dir>     - Create backup of <dir> in ~/backups"
+echo "  new_pyproject.sh <Name> - Create basic Python project structure"
+echo "" # Add blank line after list
+
 # --- End Custom Welcome Message ---
