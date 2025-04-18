@@ -3,8 +3,8 @@
 # Displays a custom welcome message with ASCII art, greeting, and weather.
 
 # --- Configuration ---
-LOCATION="CanyonLake,TX" # <--- IMPORTANT: Change this if not correct!
-FIGLET_TEXT="Terminal"    # <--- Text for the figlet banner
+LOCATION="78070" # <--- IMPORTANT: Change this if not correct!
+FIGLET_TEXT="Greetings"    # <--- Text for the figlet banner
 
 # --- Dependencies Check ---
 FIGLET_CMD=$(command -v figlet)
