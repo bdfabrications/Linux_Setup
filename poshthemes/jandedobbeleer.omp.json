@@ -23,7 +23,7 @@
             "style": "folder"
           },
           "style": "powerline",
-          "template": " \uea83  {{ .Path }} ",
+          "template": " \uea83 {{ .Path }} ",
           "type": "path"
         },
         {
@@ -35,7 +35,6 @@
             "{{ if gt .Behind 0 }}#B388FF{{ end }}"
           ],
           "foreground": "#193549",
-          "leading_diamond": "\ue0b6",
           "powerline_symbol": "\ue0b0",
           "properties": {
             "branch_template": "{{ trunc 25 .Branch }}",
@@ -45,7 +44,6 @@
           },
           "style": "powerline",
           "template": " {{ .UpstreamIcon }}{{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} \uf044 {{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046 {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }} ",
-          "trailing_diamond": "\ue0b4",
           "type": "git"
         },
         {
@@ -81,16 +79,16 @@
           "template": " \ue624 {{ if .Error }}{{ .Error }}{{ else }}{{ .Full }}{{ end }} ",
           "type": "julia"
         },
-        {
-          "background": "#FFDE57",
-          "foreground": "#111111",
+        { 
+          "background": "#4584b6",
+          "foreground": "#ffffff",
           "powerline_symbol": "\ue0b0",
           "properties": {
-            "display_mode": "files",
-            "fetch_virtual_env": false
+            "fetch_virtual_env": true
+            
           },
           "style": "powerline",
-          "template": " \ue235 {{ if .Error }}{{ .Error }}{{ else }}{{ .Full }}{{ end }} ",
+          "template": " \uE235 {{ .Full }}{{ if .Venv }} ({{ .Venv }}){{ end }} ",
           "type": "python"
         },
         {
@@ -167,6 +165,7 @@
       "type": "prompt"
     },
     {
+      "alignment": "right", 
       "segments": [
         {
           "background": "#0077c2",
@@ -218,7 +217,7 @@
           "type": "time"
         }
       ],
-      "type": "rprompt"
+      "type": "rprompt" 
     }
   ],
   "console_title_template": "{{ .Shell }} in {{ .Folder }}",

@@ -165,6 +165,85 @@ echo "  new_pyproject.sh <Name> - Create basic Python project structure"
 echo "  rgf.sh <pattern> [path] - Search for text using ripgrep"
 echo "  serve_here.sh [port]    - Start simple web server in current directory"
 echo "  ollama_chat.sh [model]  - Start interactive chat with Ollama (default: phi3)"
+echo "" 
+echo "* Python Tip: For Python projects not created with the script,"
+echo "  run 'python3 -m venv .venv' inside the project root. The 'p' command"
+echo "  will then automatically activate it when you select that project."
 echo "" # Add blank line after list
 
 # --- End Custom Welcome Message ---
+#
+# # Function to cd into a project dir selected via fzf, activate venv, and open nvim
+p() {
+    # Define the base directory where your projects are stored
+    # You can change this if you store projects elsewhere (e.g., ~/git, ~/work)
+    local PROJECTS_BASE_DIR="$HOME/projects"
+    local selected_proj_path
+
+    # Check if fzf command exists
+    if ! command -v fzf &> /dev/null; then
+        echo "Error: fzf command not found. Install with 'sudo apt install fzf'." >&2 
+        return 1 # Exit the function with an error status
+    fi
+    
+    # Check if the base project directory exists
+    if [ ! -d "$PROJECTS_BASE_DIR" ]; then
+        echo "Error: Project base directory '$PROJECTS_BASE_DIR' not found." >&2
+        echo "Please create it or change the PROJECTS_BASE_DIR variable in this function." >&2
+        return 1
+    fi
+
+    # Use find (or fd if available) to list directories one level deep
+    # Pipe the list into fzf for interactive selection
+    # Store the selected full path in selected_proj_path
+    echo "Searching for projects in $PROJECTS_BASE_DIR..." # Provide feedback
+    if command -v fd &> /dev/null; then
+         # Use fd: search base dir, type d=dirs, max-depth 1
+         selected_proj_path=$(fd . "$PROJECTS_BASE_DIR" --type d --max-depth 1 | fzf --height 40% --reverse --prompt="Select Project > ")
+    else
+        # Use find: -mindepth 1 -maxdepth 1 prevents listing the base dir itself
+        selected_proj_path=$(find "$PROJECTS_BASE_DIR" -mindepth 1 -maxdepth 1 -type d | fzf --height 40% --reverse --prompt="Select Project > ")
+    fi
+
+    # Check if fzf returned successfully (exit code 0) AND if a path was selected
+    local fzf_exit_code=$?
+    if [ $fzf_exit_code -eq 0 ] && [ -n "$selected_proj_path" ]; then
+        # Check if the selection is actually a directory (safety check)
+         if [ -d "$selected_proj_path" ]; then
+            # Use 'cd' to change directory IN THE CURRENT SHELL
+            # This only works because this is a function, not a script!
+            cd "$selected_proj_path" || { echo "Error changing to directory." >&2; return 1; } # Use || return for error check
+            echo "Changed to: $(pwd)"
+
+            # Automatically activate Python virtual environment if common ones exist
+            if [ -f ".venv/bin/activate" ]; then
+                echo "Activating Python virtual environment (.venv)..."
+                source .venv/bin/activate
+            elif [ -f "venv/bin/activate" ]; then
+                 echo "Activating Python virtual environment (venv)..."
+                 source venv/bin/activate
+            fi
+
+            # Open Neovim
+            if command -v nvim &> /dev/null; then
+                echo "Opening nvim..."
+                nvim
+            else
+                 echo "nvim command not found, cannot open editor." >&2
+                 # Still return 0 because cd/venv activation might have succeeded
+                 return 0 
+            fi
+        else
+             echo "Invalid selection (not a directory)." >&2
+             return 1
+        fi
+    elif [ $fzf_exit_code -eq 130 ]; then
+         # User pressed Esc or Ctrl+C in fzf
+         echo "No project selected." 
+         return 0 # Return successfully, user cancelled
+    else
+         # Other fzf error or no directories found
+         echo "Fzf selection error or no projects found in $PROJECTS_BASE_DIR." >&2
+         return 1
+    fi
+}
