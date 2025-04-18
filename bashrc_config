@@ -164,7 +164,7 @@ echo "  backup_dir.sh <dir>     - Create backup of <dir> in ~/backups"
 echo "  new_pyproject.sh <Name> - Create basic Python project structure"
 echo "  rgf.sh <pattern> [path] - Search for text using ripgrep"
 echo "  serve_here.sh [port]    - Start simple web server in current directory"
-
+echo "  ollama_chat.sh [model]  - Start interactive chat with Ollama (default: phi3)"
 echo "" # Add blank line after list
 
 # --- End Custom Welcome Message ---
