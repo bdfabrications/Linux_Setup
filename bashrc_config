@@ -82,6 +82,9 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
+# Alias for running the system update script with sudo
+alias update-sys='sudo $HOME/bin/update_system.sh'
+
 # Alias definitions.
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
@@ -114,7 +117,7 @@ echo "" # Start with a blank line
 
 # Configuration
 LOCATION="78070"
-FIGLET_TEXT="Greetings"
+FIGLET_TEXT="o7 Tester"
 
 # Dependencies Check
 FIGLET_CMD=$(command -v figlet)

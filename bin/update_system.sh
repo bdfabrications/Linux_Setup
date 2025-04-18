@@ -1,6 +1,18 @@
 #!/bin/bash
 # Simple script to update the system, upgrade packages, and clean up.
 
+# Determine if sudo is needed
+SUDO_CMD=""
+if [[ $EUID -ne 0 ]]; then
+    if command -v sudo &> /dev/null; then
+        SUDO_CMD="sudo"
+        echo "[Info] Not root. Using 'sudo' for package operations."
+    else
+        echo "[Error] Not root and 'sudo' command not found. Cannot manage packages."
+        exit 1
+    fi
+fi
+
 echo "--- Starting System Update & Cleanup ---"
 
 # Update package lists
