@@ -114,26 +114,27 @@ echo "$GREETING, $USERNAME!"
 echo ""
 
 # 3. Display Weather (Optional - Uncomment and set LOCATION in ~/.bashrc or here)
-# echo "* Weather Info:"
-# if [ -x "$CURL_CMD" ]; then
-#     # LOCATION should be set by user if desired, or leave blank for IP guess
-#     if [ -n "$LOCATION" ]; then
-#         weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
-#         if [ $? -eq 0 ] && [ -n "$weather" ]; then
-#             echo "  $weather"
-#         else
-#             echo "  (Could not retrieve weather for $LOCATION)"
-#         fi
-#     else
-#         echo "  (Set LOCATION in ~/.bashrc to enable weather)"
-#     fi
-# else
-#     echo "  (Install 'curl' to enable weather)"
-# fi
-# echo ""
+echo "* Weather Info:"
+if [ -x "$CURL_CMD" ]; then
+    # LOCATION should be set by user if desired, or leave blank for IP guess
+    if [ -n "$LOCATION" ]; then
+        weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
+        if [ $? -eq 0 ] && [ -n "$weather" ]; then
+            echo "  $weather"
+        else
+            echo "  (Could not retrieve weather for $LOCATION)"
+        fi
+    else
+        echo "  (Set LOCATION in ~/.bashrc to enable weather)"
+    fi
+else
+    echo "  (Install 'curl' to enable weather)"
+fi
+echo ""
 
 # --- Handy Scripts ---
 echo "Available custom commands:"
+echo ""
 echo "  update-sys    - Update system packages (needs sudo password)" 
 echo "  newweb <Name> - Create basic HTML/CSS/JS project structure (incl. Git)"
 echo "  newpy <Name>  - Create Python project structure (incl. Git, .venv, .gitignore)" 

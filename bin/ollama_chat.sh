@@ -3,7 +3,7 @@
 # Usage: ollama_chat.sh [model_name] (Defaults to phi3 if no model specified)
 
 # --- Configuration ---
-DEFAULT_MODEL="phi3"
+DEFAULT_MODEL="llama3:8b"
 MODEL_NAME="${1:-$DEFAULT_MODEL}" # Use provided model name or the default
 
 # --- Check Dependencies ---
