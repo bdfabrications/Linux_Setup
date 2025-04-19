@@ -1,0 +1,29 @@
+# ~/.bash_aliases
+# This file is sourced by ~/.bashrc
+
+# Enable color support of ls and also add handy aliases
+# Check if needed - ls should already have color enabled by default in most modern setups
+# if [ -x /usr/bin/dircolors ]; then
+#     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+#     alias ls='ls --color=auto'
+#     alias grep='grep --color=auto'
+#     alias fgrep='fgrep --color=auto'
+#     alias egrep='egrep --color=auto'
+# fi
+
+# Preferred ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# --- Custom Aliases ---
+# Alias for running the system update script with sudo
+alias update-sys='sudo $HOME/bin/update_system.sh' 
+# Aliases for other custom scripts in ~/bin
+alias newpy='$HOME/bin/new_pyproject.sh'
+alias newweb='$HOME/bin/new_webproject.sh'
+alias backupd='$HOME/bin/backup_dir.sh'
+alias rgf='$HOME/bin/rgf.sh'
+alias serveh='$HOME/bin/serve_here.sh'
+alias ochat='$HOME/bin/ollama_chat.sh'
+# --- End Custom Aliases ---

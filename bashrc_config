@@ -21,105 +21,73 @@ HISTFILESIZE=2000
 shopt -s checkwinsize
 
 # make less more friendly for non-text input files, see lesspipe(1)
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+#[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # set variable identifying the chroot you work in (used in the prompt below)
-if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
-fi
+#if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
+#    debian_chroot=$(cat /etc/debian_chroot)
+#fi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
-case "$TERM" in
-    xterm-color) color_prompt=yes;;
-esac
+# This section is likely overridden by Oh My Posh below, but kept for reference
+# case "$TERM" in
+#     xterm-color) color_prompt=yes;;
+# esac
+# #force_color_prompt=yes
+# if [ -n "$force_color_prompt" ]; then
+#     if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+#   color_prompt=yes
+#     else
+#   color_prompt=
+#     fi
+# fi
+# if [ "$color_prompt" = yes ]; then
+#     PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+# else
+#     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+# fi
+# unset color_prompt force_color_prompt
+# case "$TERM" in
+# xterm*|rxvt*)
+#     PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+#     ;;
+# *)
+#     ;;
+# esac
 
-# uncomment for a colored prompt, if the terminal has the capability; turned
-# off by default to not distract the user: the focus in a terminal window
-# should be on the output of commands, not on the prompt
-#force_color_prompt=yes
-
-if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
-	color_prompt=yes
-    else
-	color_prompt=
-    fi
-fi
-
-if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-fi
-unset color_prompt force_color_prompt
-
-# If this is an xterm set the title to user@host:dir
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
-
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-# some more ls aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-
-# Alias for running the system update script with sudo
-alias update-sys='sudo $HOME/bin/update_system.sh'
-
-# Alias definitions.
-# You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
-
+# Alias definitions moved to ~/.bash_aliases
+# Source ~/.bash_aliases if it exists
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-#if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
-#    . /etc/bash_completion
-#fi
-
 # Initialize Oh My Posh prompt
-eval "$(/usr/local/bin/oh-my-posh init bash --config "$HOME/.poshthemes/jandedobbeleer.omp.json")"
+# Make sure oh-my-posh binary is found correctly
+if command -v oh-my-posh &> /dev/null; then
+    eval "$(oh-my-posh init bash --config "$HOME/.poshthemes/jandedobbeleer.omp.json")"
+else
+    echo "[Warning] oh-my-posh command not found. Cannot initialize prompt theme." >&2
+fi
 
 # Add ~/bin to PATH if it exists and isn't already there
 if [ -d "$HOME/bin" ] && [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
     PATH="$HOME/bin:$PATH"
 fi
+# Add ~/.local/bin to PATH if it exists and isn't already there (Common for pipx etc)
+if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
 export PATH
 
-# ... (existing content of bashrc_config like Oh My Posh init, PATH export) ...
 
 # --- Custom Welcome Message ---
 echo "" # Start with a blank line
 
-# Configuration
-LOCATION="78070"
-FIGLET_TEXT="o7 Tester"
+# Configuration for Welcome Message
+LOCATION="78070" # Set default, remind user to change if needed
+FIGLET_TEXT="o7 Tester" # Text for the figlet banner
 
-# Dependencies Check
+# Dependencies Check for Welcome Message
 FIGLET_CMD=$(command -v figlet)
 CURL_CMD=$(command -v curl)
 
@@ -145,45 +113,53 @@ fi
 echo "$GREETING, $USERNAME!"
 echo ""
 
-# 3. Display Weather
-if [ -x "$CURL_CMD" ]; then
-    # echo "Checking weather for $LOCATION..." # Optional: Can remove this line for cleaner output
-    weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
-    if [ $? -eq 0 ] && [ -n "$weather" ]; then
-        echo "$weather"
-    # else # Optional: Can remove error message for cleaner output
-        # echo "Could not retrieve weather information."
-    fi
-fi
-echo ""
+# 3. Display Weather (Optional - Uncomment and set LOCATION in ~/.bashrc or here)
+# echo "* Weather Info:"
+# if [ -x "$CURL_CMD" ]; then
+#     # LOCATION should be set by user if desired, or leave blank for IP guess
+#     if [ -n "$LOCATION" ]; then
+#         weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
+#         if [ $? -eq 0 ] && [ -n "$weather" ]; then
+#             echo "  $weather"
+#         else
+#             echo "  (Could not retrieve weather for $LOCATION)"
+#         fi
+#     else
+#         echo "  (Set LOCATION in ~/.bashrc to enable weather)"
+#     fi
+# else
+#     echo "  (Install 'curl' to enable weather)"
+# fi
+# echo ""
 
 # --- Handy Scripts ---
 echo "Available custom commands:"
-echo "  update-sys              - Update system packages (needs sudo password)"
-echo "  backup_dir.sh <dir>     - Create backup of <dir> in ~/backups"
-echo "  new_pyproject.sh <Name> - Create basic Python project structure"
-echo "  rgf.sh <pattern> [path] - Search for text using ripgrep"
-echo "  serve_here.sh [port]    - Start simple web server in current directory"
-echo "  ollama_chat.sh [model]  - Start interactive chat with Ollama (default: phi3)"
+echo "  p             - Select project (in ~/projects), cd, activate venv (if found), open nvim" 
+echo "  update-sys    - Update system packages (needs sudo password)" 
+echo "  backupd <dir> - Create backup of <dir> in ~/backups (backup_dir.sh)" 
+echo "  newpy <Name>  - Create Python project structure (incl. Git, .venv, .gitignore) (new_pyproject.sh)" 
+echo "  newweb <Name> - Create basic HTML/CSS/JS project structure (incl. Git) (new_webproject.sh)"
+echo "  rgf <pat> [path] - Search for text using ripgrep (rgf.sh)"
+echo "  serveh [port] - Start simple web server in current directory (serve_here.sh)"
+echo "  ochat [model] - Start interactive chat with Ollama (default: phi3) (ollama_chat.sh)"
 echo "" 
-echo "* Python Tip: For Python projects not created with the script,"
+echo "* Python Tip: For Python projects not created via script,"
 echo "  run 'python3 -m venv .venv' inside the project root. The 'p' command"
 echo "  will then automatically activate it when you select that project."
-echo "" # Add blank line after list
-
+echo "" 
 # --- End Custom Welcome Message ---
-#
-# # Function to cd into a project dir selected via fzf, activate venv, and open nvim
+
+
+# Function to cd into a project dir selected via fzf, activate venv, and open nvim
 p() {
     # Define the base directory where your projects are stored
-    # You can change this if you store projects elsewhere (e.g., ~/git, ~/work)
     local PROJECTS_BASE_DIR="$HOME/projects"
     local selected_proj_path
 
     # Check if fzf command exists
     if ! command -v fzf &> /dev/null; then
         echo "Error: fzf command not found. Install with 'sudo apt install fzf'." >&2 
-        return 1 # Exit the function with an error status
+        return 1
     fi
     
     # Check if the base project directory exists
@@ -194,28 +170,22 @@ p() {
     fi
 
     # Use find (or fd if available) to list directories one level deep
-    # Pipe the list into fzf for interactive selection
-    # Store the selected full path in selected_proj_path
-    echo "Searching for projects in $PROJECTS_BASE_DIR..." # Provide feedback
+    echo "Searching for projects in $PROJECTS_BASE_DIR..." >&2 # Send search message to stderr
     if command -v fd &> /dev/null; then
-         # Use fd: search base dir, type d=dirs, max-depth 1
          selected_proj_path=$(fd . "$PROJECTS_BASE_DIR" --type d --max-depth 1 | fzf --height 40% --reverse --prompt="Select Project > ")
     else
-        # Use find: -mindepth 1 -maxdepth 1 prevents listing the base dir itself
         selected_proj_path=$(find "$PROJECTS_BASE_DIR" -mindepth 1 -maxdepth 1 -type d | fzf --height 40% --reverse --prompt="Select Project > ")
     fi
 
-    # Check if fzf returned successfully (exit code 0) AND if a path was selected
+    # Check if fzf returned successfully and a path was selected
     local fzf_exit_code=$?
     if [ $fzf_exit_code -eq 0 ] && [ -n "$selected_proj_path" ]; then
-        # Check if the selection is actually a directory (safety check)
          if [ -d "$selected_proj_path" ]; then
-            # Use 'cd' to change directory IN THE CURRENT SHELL
-            # This only works because this is a function, not a script!
-            cd "$selected_proj_path" || { echo "Error changing to directory." >&2; return 1; } # Use || return for error check
+            # Change directory IN THE CURRENT SHELL
+            cd "$selected_proj_path" || { echo "Error changing to directory." >&2; return 1; } 
             echo "Changed to: $(pwd)"
 
-            # Automatically activate Python virtual environment if common ones exist
+            # Activate venv if present
             if [ -f ".venv/bin/activate" ]; then
                 echo "Activating Python virtual environment (.venv)..."
                 source .venv/bin/activate
@@ -229,21 +199,18 @@ p() {
                 echo "Opening nvim..."
                 nvim
             else
-                 echo "nvim command not found, cannot open editor." >&2
-                 # Still return 0 because cd/venv activation might have succeeded
+                 echo "nvim command not found." >&2
                  return 0 
             fi
         else
-             echo "Invalid selection (not a directory)." >&2
+             echo "Invalid selection." >&2
              return 1
         fi
     elif [ $fzf_exit_code -eq 130 ]; then
-         # User pressed Esc or Ctrl+C in fzf
-         echo "No project selected." 
-         return 0 # Return successfully, user cancelled
+         echo "No project selected." # User cancelled
+         return 0 
     else
-         # Other fzf error or no directories found
-         echo "Fzf selection error or no projects found in $PROJECTS_BASE_DIR." >&2
+         echo "Fzf selection error or no projects found." >&2
          return 1
     fi
 }
