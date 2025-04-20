@@ -1,6 +1,7 @@
 #!/bin/bash
 # Setup script for WSL (Ubuntu/Debian-based) environments.
-# Installs dependencies, Neovim v0.11.0, Oh My Posh, links dotfiles, and sets up Neovim plugins.
+# Installs dependencies, Neovim v0.11.0 (using .deb), Oh My Posh, links dotfiles,
+# and sets up Neovim plugins.
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -29,7 +30,11 @@ sudo apt install -y git curl wget build-essential ca-certificates tar \
 	python3 python3-pip python3-venv \
 	figlet fzf ripgrep fd-find unzip
 
-# Check for fd symlink (Debian/Ubuntu often install as fdfind)
+# Remove existing package manager Neovim FIRST
+echo "Attempting to remove existing package manager Neovim (if any)..."
+sudo apt remove --purge neovim neovim-runtime -y || true
+
+# Handle fd symlink (Debian/Ubuntu often install as fdfind)
 if command_exists fdfind && ! command_exists fd; then
 	echo "[Info] Creating 'fd' symlink for 'fdfind'..."
 	if [ ! -L /usr/local/bin/fd ]; then
@@ -51,11 +56,12 @@ if ! command_exists oh-my-posh; then
 		exit 1
 	fi
 	POSH_URL="https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-${POSH_ARCH}"
-	if sudo curl -Lo /usr/local/bin/oh-my-posh "$POSH_URL"; then
+	# Use curl with -f to fail on server errors
+	if sudo curl -fLo /usr/local/bin/oh-my-posh "$POSH_URL"; then
 		sudo chmod +x /usr/local/bin/oh-my-posh
 		echo "Oh My Posh installed to /usr/local/bin."
 	else
-		echo "[Error] Failed to download Oh My Posh."
+		echo "[Error] Failed to download Oh My Posh (curl error code $?)."
 		exit 1
 	fi
 else
@@ -64,72 +70,53 @@ fi
 oh-my-posh --version
 echo ""
 
-# --- 3. Install Neovim v0.11.0 (tar.gz method) ---
+# --- 3. Install Neovim v0.11.0 (.deb method) ---
 NVIM_VERSION="v0.11.0"
-echo "[3/6] Installing Neovim ${NVIM_VERSION} (tar.gz method)..."
+echo "[3/6] Installing Neovim ${NVIM_VERSION} (.deb method)..."
 
+# Check if correct version is already installed
+CORRECT_VERSION_INSTALLED=false
 if command_exists nvim && [[ "$(nvim --version | head -n 1)" == *"${NVIM_VERSION#v}"* ]]; then
 	echo "Neovim ${NVIM_VERSION} already installed."
-else
-	if command_exists nvim; then
-		echo "[Info] Existing nvim found, but not version ${NVIM_VERSION}. Will replace."
-		# Consider removing or backing up existing /usr/local/bin/nvim and /usr/local/lib/nvim* if needed
-		sudo rm -f /usr/local/bin/nvim
-		sudo rm -rf /usr/local/lib/nvim-* # Remove old version dirs if they follow a pattern
-	fi
+	CORRECT_VERSION_INSTALLED=true
+fi
 
+if [ "$CORRECT_VERSION_INSTALLED" = false ]; then
+	# Determine architecture
 	ARCH=$(uname -m)
 	if [[ "$ARCH" == "x86_64" ]]; then
 		NVIM_ARCH_SUFFIX="linux64"
 	elif [[ "$ARCH" == "aarch64" ]]; then
-		NVIM_ARCH_SUFFIX="linux-arm64" # Check exact name on releases page if needed
+		NVIM_ARCH_SUFFIX="linux-arm64" # Verify exact name on GitHub releases page
 	else
 		echo "[Error] Unsupported architecture: $ARCH for Neovim ${NVIM_VERSION} download." >&2
 		exit 1
 	fi
 
-	NVIM_TARBALL="nvim-${NVIM_ARCH_SUFFIX}.tar.gz"
-	NVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${NVIM_TARBALL}"
-	NVIM_EXTRACT_DIR_NAME="nvim-${NVIM_ARCH_SUFFIX}"       # The directory name inside the tarball
-	NVIM_INSTALL_DIR="/usr/local/lib/nvim-${NVIM_VERSION}" # Install location
+	NVIM_DEB="nvim-${NVIM_ARCH_SUFFIX}.deb"
+	NVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${NVIM_DEB}"
 
-	echo "Downloading Neovim ${NVIM_VERSION} for ${ARCH}..."
-	curl -Lo "${NVIM_TARBALL}" "${NVIM_DOWNLOAD_URL}"
+	echo "Downloading Neovim ${NVIM_VERSION} .deb for ${ARCH}..."
+	# Use curl with -f (fail fast) and -L (follow redirects)
+	curl -fLo "${NVIM_DEB}" "${NVIM_DOWNLOAD_URL}"
 	if [ $? -ne 0 ]; then
-		echo "[Error] Failed to download Neovim tarball."
+		echo "[Error] Failed to download Neovim .deb (curl error code $?)."
 		exit 1
 	fi
 
-	echo "Extracting Neovim..."
-	tar xzf "${NVIM_TARBALL}"
+	echo "Installing Neovim via apt..."
+	# Use apt install on the local .deb file. It handles dependencies.
+	sudo apt install -y "./${NVIM_DEB}"
 	if [ $? -ne 0 ]; then
-		echo "[Error] Failed to extract Neovim tarball."
-		rm -f "${NVIM_TARBALL}"
-		exit 1
-	fi
-
-	echo "Installing Neovim to ${NVIM_INSTALL_DIR}..."
-	# Remove existing install dir for this version if it exists, then move
-	sudo rm -rf "${NVIM_INSTALL_DIR}"
-	sudo mv "${NVIM_EXTRACT_DIR_NAME}" "${NVIM_INSTALL_DIR}"
-	if [ $? -ne 0 ]; then
-		echo "[Error] Failed to move extracted Neovim files."
-		rm -f "${NVIM_TARBALL}"
-		exit 1
-	fi
-
-	echo "Creating symlink /usr/local/bin/nvim..."
-	sudo ln -sf "${NVIM_INSTALL_DIR}/bin/nvim" /usr/local/bin/nvim
-	if [ $? -ne 0 ]; then
-		echo "[Error] Failed to create Neovim symlink."
-		rm -f "${NVIM_TARBALL}"
+		echo "[Error] Failed to install Neovim .deb package."
+		rm -f "${NVIM_DEB}"
 		exit 1
 	fi
 
 	echo "Cleaning up downloaded file..."
-	rm -f "${NVIM_TARBALL}"
+	rm -f "${NVIM_DEB}"
 
-	echo "Neovim ${NVIM_VERSION} installed successfully."
+	echo "Neovim ${NVIM_VERSION} installation attempt finished."
 fi
 # Verify install
 nvim --version | head -n 1
@@ -145,14 +132,19 @@ if ! command_exists ollama; then
 		echo "$OLLAMA_INSTALL_OUTPUT"
 	else
 		echo "Ollama installed. Pulling default models..."
+		# In WSL, systemd might not be fully available, try starting directly
 		if ! pgrep -x ollama >/dev/null; then
-			echo "Starting temporary Ollama server..."
-			ollama serve &
-			sleep 5
+			echo "Attempting to start Ollama server..."
+			(ollama serve &) # Start in background
+			sleep 5          # Give it time
 		fi
-		(ollama pull llama3:8b && echo "[Info] Pulled llama3:8b") &
-		(ollama pull phi3 && echo "[Info] Pulled phi3") &
-		echo "[Info] Default model downloads initiated in background."
+		if pgrep -x ollama >/dev/null; then
+			(ollama pull llama3:8b && echo "[Info] Pulled llama3:8b") &
+			(ollama pull phi3 && echo "[Info] Pulled phi3") &
+			echo "[Info] Default model downloads initiated in background."
+		else
+			echo "[Warning] Ollama server doesn't seem to be running. Skipping model download."
+		fi
 	fi
 else
 	echo "Ollama already installed."
