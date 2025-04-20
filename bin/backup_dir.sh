@@ -3,14 +3,14 @@
 
 # --- Configuration ---
 # Directory where you want to store backups (MAKE SURE THIS EXISTS!)
-# Using /root/backups as an example for the root user
-BACKUP_DEST_DIR="/root/backups"
+# Using /$HOME/backups as an example for the $HOME user
+BACKUP_DEST_DIR="/$HOME/backups"
 
 # --- Check Input ---
 # Check if a directory path was provided as an argument
 if [ -z "$1" ]; then
   echo "Usage: $0 <directory_to_backup>"
-  echo "Example: $0 /root/.config/nvim"
+  echo "Example: $0 /$HOME/.config/nvim"
   exit 1
 fi
 
@@ -33,7 +33,7 @@ if [ ! -d "$BACKUP_DEST_DIR" ]; then
 fi
 
 # --- Create Backup ---
-# Get the base name of the source directory (e.g., 'nvim' from '/root/.config/nvim')
+# Get the base name of the source directory (e.g., 'nvim' from '/$HOME/.config/nvim')
 BASENAME=$(basename "$SOURCE_DIR")
 
 # Create a timestamp string (e.g., 20250416_212030)
