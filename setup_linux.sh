@@ -69,22 +69,26 @@ PACKAGES_ARCH="git curl wget base-devel tar python python-pip python-venv figlet
 
 INSTALL_CMD=""
 UPDATE_CMD=""
+REMOVE_NVIM_CMD=""
 PACKAGES=""
 
 case "$DISTRO" in
   ubuntu|debian)
     UPDATE_CMD="sudo apt update"
     INSTALL_CMD="sudo apt install -y"
+    REMOVE_NVIM_CMD="sudo apt remove --purge neovim neovim-runtime -y || true" # Remove existing apt nvim, ignore errors if not installed
     PACKAGES="$PACKAGES_DEBIAN"
     ;;
   fedora)
     UPDATE_CMD="sudo dnf check-update"
     INSTALL_CMD="sudo dnf install -y"
+    REMOVE_NVIM_CMD="sudo dnf remove neovim -y || true"
     PACKAGES="$PACKAGES_FEDORA"
     ;;
   arch|manjaro)
     # UPDATE_CMD="sudo pacman -Syu --noconfirm" # Uncomment if full system upgrade is desired
     INSTALL_CMD="sudo pacman -S --noconfirm --needed"
+    REMOVE_NVIM_CMD="sudo pacman -Rns neovim --noconfirm || true"
     PACKAGES="$PACKAGES_ARCH"
     ;;
   *)
@@ -100,6 +104,12 @@ esac
 if [ -n "$UPDATE_CMD" ]; then
     echo "Updating package manager..."
     $UPDATE_CMD || echo "[Warning] Package manager update command failed, continuing install attempt..."
+fi
+
+# Remove existing package manager Neovim FIRST
+if [ -n "$REMOVE_NVIM_CMD" ]; then
+    echo "Attempting to remove existing package manager Neovim (if any)..."
+    $REMOVE_NVIM_CMD
 fi
 
 # Install packages
@@ -129,11 +139,12 @@ if ! command_exists oh-my-posh; then
     ARCH=$(uname -m)
     if [[ "$ARCH" == "x86_64" ]]; then POSH_ARCH="amd64"; elif [[ "$ARCH" == "aarch64" ]]; then POSH_ARCH="arm64"; else echo "[Error] Unsupported architecture: $ARCH for Oh My Posh auto-install."; exit 1; fi
     POSH_URL="https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-${POSH_ARCH}"
-    if sudo curl -Lo /usr/local/bin/oh-my-posh "$POSH_URL"; then
+    # Use curl with -f to fail on server errors
+    if sudo curl -fLo /usr/local/bin/oh-my-posh "$POSH_URL"; then
         sudo chmod +x /usr/local/bin/oh-my-posh
         echo "Oh My Posh installed to /usr/local/bin."
     else
-        echo "[Error] Failed to download Oh My Posh."
+        echo "[Error] Failed to download Oh My Posh (curl error code $?)."
         exit 1
     fi
 else
@@ -147,20 +158,31 @@ echo ""
 NVIM_VERSION="v0.11.0"
 echo "[3/6] Installing Neovim ${NVIM_VERSION} (tar.gz method)..."
 
+# Check if correct version is already linked
+CORRECT_VERSION_INSTALLED=false
 if command_exists nvim && [[ "$(nvim --version | head -n 1)" == *"${NVIM_VERSION#v}"* ]]; then
-    echo "Neovim ${NVIM_VERSION} already installed."
-else
-    if command_exists nvim; then
-        echo "[Info] Existing nvim found, but not version ${NVIM_VERSION}. Will replace."
-        sudo rm -f /usr/local/bin/nvim
-        sudo rm -rf /usr/local/lib/nvim-* # Remove old version dirs if they follow a pattern
+    # Verify the link target matches our intended install dir too
+    if [[ -L /usr/local/bin/nvim ]] && [[ "$(readlink /usr/local/bin/nvim)" == *"/nvim-${NVIM_VERSION}/bin/nvim"* ]]; then
+        echo "Neovim ${NVIM_VERSION} already installed and linked correctly."
+        CORRECT_VERSION_INSTALLED=true
+    else
+        echo "[Info] Neovim ${NVIM_VERSION} command exists, but link is incorrect or missing. Re-installing link."
+        # Force re-linking later, but skip download/extract if files exist
     fi
+fi
+
+if [ "$CORRECT_VERSION_INSTALLED" = false ]; then
+    # Clean up potential previous failed attempts or wrong versions
+    echo "[Info] Cleaning up potential old Neovim installations in /usr/local/..."
+    sudo rm -f /usr/local/bin/nvim
+    sudo rm -rf "/usr/local/lib/nvim-${NVIM_VERSION}" # Remove specific version dir if exists
+    # Optionally remove other versions too: sudo rm -rf /usr/local/lib/nvim-*
 
     ARCH=$(uname -m)
     if [[ "$ARCH" == "x86_64" ]]; then
         NVIM_ARCH_SUFFIX="linux64"
     elif [[ "$ARCH" == "aarch64" ]]; then
-        NVIM_ARCH_SUFFIX="linux-arm64" # Check exact name on releases page if needed
+        NVIM_ARCH_SUFFIX="linux-arm64" # Verify exact name on GitHub releases page
     else
         echo "[Error] Unsupported architecture: $ARCH for Neovim ${NVIM_VERSION} download." >&2
         exit 1
@@ -171,25 +193,30 @@ else
     NVIM_EXTRACT_DIR_NAME="nvim-${NVIM_ARCH_SUFFIX}" # The directory name inside the tarball
     NVIM_INSTALL_DIR="/usr/local/lib/nvim-${NVIM_VERSION}" # Install location
 
-    echo "Downloading Neovim ${NVIM_VERSION} for ${ARCH}..."
-    curl -Lo "${NVIM_TARBALL}" "${NVIM_DOWNLOAD_URL}"
-    if [ $? -ne 0 ]; then echo "[Error] Failed to download Neovim tarball."; exit 1; fi
+    # Check if correct files already exist (maybe download failed but extract worked before?)
+    if [ ! -d "${NVIM_INSTALL_DIR}/bin" ]; then
+        echo "Downloading Neovim ${NVIM_VERSION} for ${ARCH}..."
+        # Use curl with -f (fail fast) and -L (follow redirects)
+        curl -fLo "${NVIM_TARBALL}" "${NVIM_DOWNLOAD_URL}"
+        if [ $? -ne 0 ]; then echo "[Error] Failed to download Neovim tarball (curl error code $?)."; exit 1; fi
 
-    echo "Extracting Neovim..."
-    tar xzf "${NVIM_TARBALL}"
-    if [ $? -ne 0 ]; then echo "[Error] Failed to extract Neovim tarball."; rm -f "${NVIM_TARBALL}"; exit 1; fi
+        echo "Extracting Neovim..."
+        tar xzf "${NVIM_TARBALL}"
+        if [ $? -ne 0 ]; then echo "[Error] Failed to extract Neovim tarball."; rm -f "${NVIM_TARBALL}"; exit 1; fi
 
-    echo "Installing Neovim to ${NVIM_INSTALL_DIR}..."
-    sudo rm -rf "${NVIM_INSTALL_DIR}" # Remove if exists
-    sudo mv "${NVIM_EXTRACT_DIR_NAME}" "${NVIM_INSTALL_DIR}"
-    if [ $? -ne 0 ]; then echo "[Error] Failed to move extracted Neovim files."; rm -f "${NVIM_TARBALL}"; exit 1; fi
+        echo "Installing Neovim to ${NVIM_INSTALL_DIR}..."
+        sudo mv "${NVIM_EXTRACT_DIR_NAME}" "${NVIM_INSTALL_DIR}"
+        if [ $? -ne 0 ]; then echo "[Error] Failed to move extracted Neovim files."; rm -f "${NVIM_TARBALL}"; exit 1; fi
+
+        echo "Cleaning up downloaded file..."
+        rm -f "${NVIM_TARBALL}"
+    else
+         echo "[Info] Neovim ${NVIM_VERSION} files already found in ${NVIM_INSTALL_DIR}. Skipping download/extract."
+    fi
 
     echo "Creating symlink /usr/local/bin/nvim..."
     sudo ln -sf "${NVIM_INSTALL_DIR}/bin/nvim" /usr/local/bin/nvim
-    if [ $? -ne 0 ]; then echo "[Error] Failed to create Neovim symlink."; rm -f "${NVIM_TARBALL}"; exit 1; fi
-
-    echo "Cleaning up downloaded file..."
-    rm -f "${NVIM_TARBALL}"
+    if [ $? -ne 0 ]; then echo "[Error] Failed to create Neovim symlink."; exit 1; fi
 
     echo "Neovim ${NVIM_VERSION} installed successfully."
 fi
@@ -257,4 +284,3 @@ echo "3. Run 'nvim'. If prompted, run ':Mason' to install any missing tools."
 echo "-------------------------------------------------"
 
 exit 0
-
