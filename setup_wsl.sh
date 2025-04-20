@@ -1,6 +1,6 @@
 #!/bin/bash
 # Setup script for WSL (Ubuntu/Debian-based) environments.
-# Installs dependencies, Neovim, Oh My Posh, links dotfiles, and sets up Neovim plugins.
+# Installs dependencies, Neovim v0.11.0, Oh My Posh, links dotfiles, and sets up Neovim plugins.
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -13,9 +13,8 @@ command_exists() {
 }
 
 # --- Ensure Script is Run from Repo Root ---
-# Check if a known file/dir from the repo exists in the current dir
 if [ ! -f "./dotfiles/install_links.sh" ]; then
-	echo "[Error] Please run this script from the root directory of the cloned repository (e.g., ~/my_linux_setup/)." >&2
+	echo "[Error] Please run this script from the root directory of the cloned repository." >&2
 	exit 1
 fi
 REPO_ROOT_DIR=$(pwd)
@@ -25,16 +24,14 @@ echo "[Info] Running setup from: $REPO_ROOT_DIR"
 echo "[1/6] Updating package lists and installing system dependencies via apt..."
 sudo apt update
 
-# Core tools, build tools, Python, helpers
-# Added libfuse2 for AppImage compatibility if needed on newer systems
-sudo apt install -y git curl wget build-essential ca-certificates \
+# Core tools, build tools, Python, helpers, tar for extraction
+sudo apt install -y git curl wget build-essential ca-certificates tar \
 	python3 python3-pip python3-venv \
-	figlet fzf ripgrep fd-find unzip libfuse2
+	figlet fzf ripgrep fd-find unzip
 
 # Check for fd symlink (Debian/Ubuntu often install as fdfind)
 if command_exists fdfind && ! command_exists fd; then
 	echo "[Info] Creating 'fd' symlink for 'fdfind'..."
-	# Check if link already exists before creating
 	if [ ! -L /usr/local/bin/fd ]; then
 		sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
 	else
@@ -48,85 +45,114 @@ echo ""
 echo "[2/6] Installing Oh My Posh..."
 if ! command_exists oh-my-posh; then
 	echo "Downloading Oh My Posh..."
-	# Determine architecture
 	ARCH=$(uname -m)
-	if [[ "$ARCH" == "x86_64" ]]; then
-		POSH_ARCH="amd64"
-	elif [[ "$ARCH" == "aarch64" ]]; then
-		POSH_ARCH="arm64"
-	else
-		echo "[Error] Unsupported architecture: $ARCH for Oh My Posh auto-install." >&2
+	if [[ "$ARCH" == "x86_64" ]]; then POSH_ARCH="amd64"; elif [[ "$ARCH" == "aarch64" ]]; then POSH_ARCH="arm64"; else
+		echo "[Error] Unsupported architecture: $ARCH for Oh My Posh auto-install."
 		exit 1
 	fi
 	POSH_URL="https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-${POSH_ARCH}"
-	sudo wget "$POSH_URL" -O /usr/local/bin/oh-my-posh
-	sudo chmod +x /usr/local/bin/oh-my-posh
-	echo "Oh My Posh installed to /usr/local/bin."
+	if sudo curl -Lo /usr/local/bin/oh-my-posh "$POSH_URL"; then
+		sudo chmod +x /usr/local/bin/oh-my-posh
+		echo "Oh My Posh installed to /usr/local/bin."
+	else
+		echo "[Error] Failed to download Oh My Posh."
+		exit 1
+	fi
 else
 	echo "Oh My Posh already installed."
 fi
-# Verify install
 oh-my-posh --version
 echo ""
 
-# --- 3. Install Neovim (Latest Stable AppImage) ---
-echo "[3/6] Installing Neovim (Latest Stable AppImage)..."
-if ! command_exists nvim; then
-	echo "Downloading Neovim AppImage..."
-	# AppImage is typically x86_64 only. If ARM is needed, need .tar.gz method
-	ARCH=$(uname -m)
-	if [[ "$ARCH" != "x86_64" ]]; then
-		echo "[Warning] Neovim AppImage might not be available for $ARCH. Attempting download anyway..."
-		# Consider adding tar.gz fallback for ARM here later if needed
-	fi
+# --- 3. Install Neovim v0.11.0 (tar.gz method) ---
+NVIM_VERSION="v0.11.0"
+echo "[3/6] Installing Neovim ${NVIM_VERSION} (tar.gz method)..."
 
-	NVIM_APPIMAGE_URL="https://github.com/neovim/neovim/releases/latest/download/nvim.appimage"
-	curl -Lo nvim.appimage "$NVIM_APPIMAGE_URL"
-	if [ $? -ne 0 ]; then
-		echo "Error downloading Neovim AppImage."
-		exit 1
-	fi
-
-	echo "Making AppImage executable and linking to /usr/local/bin/nvim..."
-	chmod u+x nvim.appimage
-	# Use mv first, then check if linking is needed (less common for single binary)
-	if [ -f /usr/local/bin/nvim ]; then
-		echo "[Info] /usr/local/bin/nvim already exists. Backing up and replacing."
-		sudo mv /usr/local/bin/nvim "/usr/local/bin/nvim.bak.$(date +%s)"
-	fi
-	sudo mv nvim.appimage /usr/local/bin/nvim
-	if [ $? -ne 0 ]; then
-		echo "Error moving Neovim AppImage."
-		exit 1
-	fi
-	echo "Neovim installed."
+if command_exists nvim && [[ "$(nvim --version | head -n 1)" == *"${NVIM_VERSION#v}"* ]]; then
+	echo "Neovim ${NVIM_VERSION} already installed."
 else
-	echo "Neovim (nvim) already found in PATH."
+	if command_exists nvim; then
+		echo "[Info] Existing nvim found, but not version ${NVIM_VERSION}. Will replace."
+		# Consider removing or backing up existing /usr/local/bin/nvim and /usr/local/lib/nvim* if needed
+		sudo rm -f /usr/local/bin/nvim
+		sudo rm -rf /usr/local/lib/nvim-* # Remove old version dirs if they follow a pattern
+	fi
+
+	ARCH=$(uname -m)
+	if [[ "$ARCH" == "x86_64" ]]; then
+		NVIM_ARCH_SUFFIX="linux64"
+	elif [[ "$ARCH" == "aarch64" ]]; then
+		NVIM_ARCH_SUFFIX="linux-arm64" # Check exact name on releases page if needed
+	else
+		echo "[Error] Unsupported architecture: $ARCH for Neovim ${NVIM_VERSION} download." >&2
+		exit 1
+	fi
+
+	NVIM_TARBALL="nvim-${NVIM_ARCH_SUFFIX}.tar.gz"
+	NVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${NVIM_TARBALL}"
+	NVIM_EXTRACT_DIR_NAME="nvim-${NVIM_ARCH_SUFFIX}"       # The directory name inside the tarball
+	NVIM_INSTALL_DIR="/usr/local/lib/nvim-${NVIM_VERSION}" # Install location
+
+	echo "Downloading Neovim ${NVIM_VERSION} for ${ARCH}..."
+	curl -Lo "${NVIM_TARBALL}" "${NVIM_DOWNLOAD_URL}"
+	if [ $? -ne 0 ]; then
+		echo "[Error] Failed to download Neovim tarball."
+		exit 1
+	fi
+
+	echo "Extracting Neovim..."
+	tar xzf "${NVIM_TARBALL}"
+	if [ $? -ne 0 ]; then
+		echo "[Error] Failed to extract Neovim tarball."
+		rm -f "${NVIM_TARBALL}"
+		exit 1
+	fi
+
+	echo "Installing Neovim to ${NVIM_INSTALL_DIR}..."
+	# Remove existing install dir for this version if it exists, then move
+	sudo rm -rf "${NVIM_INSTALL_DIR}"
+	sudo mv "${NVIM_EXTRACT_DIR_NAME}" "${NVIM_INSTALL_DIR}"
+	if [ $? -ne 0 ]; then
+		echo "[Error] Failed to move extracted Neovim files."
+		rm -f "${NVIM_TARBALL}"
+		exit 1
+	fi
+
+	echo "Creating symlink /usr/local/bin/nvim..."
+	sudo ln -sf "${NVIM_INSTALL_DIR}/bin/nvim" /usr/local/bin/nvim
+	if [ $? -ne 0 ]; then
+		echo "[Error] Failed to create Neovim symlink."
+		rm -f "${NVIM_TARBALL}"
+		exit 1
+	fi
+
+	echo "Cleaning up downloaded file..."
+	rm -f "${NVIM_TARBALL}"
+
+	echo "Neovim ${NVIM_VERSION} installed successfully."
 fi
 # Verify install
 nvim --version | head -n 1
 echo ""
 
-# --- 4. Install Ollama (Optional - TODO: Add flag/prompt later if needed) ---
+# --- 4. Install Ollama ---
 echo "[4/6] Installing Ollama..."
 if ! command_exists ollama; then
 	echo "Downloading and running Ollama install script..."
-	curl -fsSL https://ollama.com/install.sh | sh
+	OLLAMA_INSTALL_OUTPUT=$(curl -fsSL https://ollama.com/install.sh | sh)
 	if [ $? -ne 0 ]; then
-		echo "[Warning] Ollama installation failed. Continuing without it."
+		echo "[Warning] Ollama installation script failed."
+		echo "$OLLAMA_INSTALL_OUTPUT"
 	else
-		echo "Ollama installed. Pulling default models (this might take time)..."
-		# Pull some default models in the background - ignore errors if they fail
-		# Check if ollama server is running first (install script sometimes starts it)
+		echo "Ollama installed. Pulling default models..."
 		if ! pgrep -x ollama >/dev/null; then
-			echo "Starting temporary Ollama server for model download..."
+			echo "Starting temporary Ollama server..."
 			ollama serve &
-			# Give it a few seconds
 			sleep 5
 		fi
-		(ollama pull llama3:8b && echo "Pulled llama3:8b") & # Run in subshell for background
-		(ollama pull phi3 && echo "Pulled phi3") &           # Run in subshell for background
-		echo "Default model downloads initiated in background. Check progress with 'ollama list'."
+		(ollama pull llama3:8b && echo "[Info] Pulled llama3:8b") &
+		(ollama pull phi3 && echo "[Info] Pulled phi3") &
+		echo "[Info] Default model downloads initiated in background."
 	fi
 else
 	echo "Ollama already installed."
@@ -135,12 +161,10 @@ echo ""
 
 # --- 5. Link Dotfiles ---
 echo "[5/6] Linking dotfiles using install_links.sh..."
-# Ensure install_links.sh is executable
 chmod +x "$REPO_ROOT_DIR/dotfiles/install_links.sh"
-# Execute the script located within the dotfiles directory
 bash "$REPO_ROOT_DIR/dotfiles/install_links.sh"
 if [ $? -ne 0 ]; then
-	echo "Error running install_links.sh."
+	echo "[Error] Error running install_links.sh."
 	exit 1
 fi
 echo "Dotfiles linked."
@@ -150,12 +174,11 @@ echo ""
 echo "[6/6] Setting up Neovim plugins (Lazy sync and Mason tools)..."
 echo "Running Lazy plugin sync..."
 nvim --headless "+Lazy! sync" +qa
-if [ $? -ne 0 ]; then echo "[Warning] Neovim Lazy sync failed. Plugins might not be installed. Run ':Lazy sync' manually inside nvim."; fi
+if [ $? -ne 0 ]; then echo "[Warning] Neovim Lazy sync failed. Run ':Lazy sync' manually inside nvim."; fi
 
 echo "Attempting to install default Mason tools (LSPs, linters, etc.)..."
-# Note: This might occasionally fail depending on network or Mason state.
 nvim --headless "+MasonInstallAll" +qa
-if [ $? -ne 0 ]; then echo "[Warning] Neovim MasonInstallAll command encountered issues. Some tools might not be installed. Run ':Mason' inside nvim to check/install tools manually."; fi
+if [ $? -ne 0 ]; then echo "[Warning] Neovim MasonInstallAll command encountered issues. Run ':Mason' inside nvim to check/install tools manually."; fi
 
 echo "Neovim setup complete."
 echo ""
@@ -165,9 +188,9 @@ echo "-------------------------------------------------"
 echo "✅ WSL Setup Complete!"
 echo ""
 echo "IMPORTANT NEXT STEPS:"
-echo "1. **RESTART YOUR WSL SESSION** for all changes (PATH, .bashrc, prompt) to take effect."
-echo "2. Ensure you have installed a **Nerd Font** on your HOST Windows system and configured your terminal (e.g., Windows Terminal) to use it for this WSL profile."
-echo "3. Run 'nvim'. If you see errors about missing tools, run ':Mason' to install them."
+echo "1. **RESTART YOUR WSL SESSION** for all changes to take effect."
+echo "2. Ensure you have installed a **Nerd Font** on your HOST Windows system and configured your terminal."
+echo "3. Run 'nvim'. If prompted, run ':Mason' to install any missing tools."
 echo "-------------------------------------------------"
 
 exit 0
