@@ -446,15 +446,16 @@ require('lazy').setup({
         capabilities = vim.tbl_deep_extend('force', capabilities, blink_cmp.get_lsp_capabilities())
       end
 
-      -- Default Servers to configure
+      -- Default Servers to configure for lspconfig (used by the default handler below)
+      -- Remove servers here that cause errors with mason-lspconfig's default handler
       local servers = {
         -- clangd = {},
         -- gopls = {},
         pyright = {}, -- Python LSP
-        ruff_lsp = {}, -- Python Linter/Formatter LSP
+        -- ruff_lsp = {}, -- REMOVED: Causes mason-lspconfig error
         bashls = {}, -- Bash LSP
         -- rust_analyzer = {},
-        tsserver = {}, -- TypeScript/JavaScript LSP
+        -- tsserver = {}, -- REMOVED: Causes mason-lspconfig error
         html = {}, -- HTML LSP
         cssls = {}, -- CSS LSP
         marksman = {}, -- Markdown LSP
@@ -465,6 +466,7 @@ require('lazy').setup({
       }
 
       -- Tools to ensure are installed by Mason
+      -- Includes LSPs, Linters, Formatters
       local ensure_installed_tools = {
         'stylua', -- Lua formatter
         -- Python
@@ -475,9 +477,9 @@ require('lazy').setup({
         'shellcheck', -- Linter
         'shfmt', -- Formatter
         -- Web Dev (TS/JS/HTML/CSS/JSON etc.)
-        'typescript-language-server', -- LSP
-        'css-lsp', -- LSP
-        'html-lsp', -- LSP
+        'typescript-language-server', -- LSP Package Name for tsserver
+        'css-lsp', -- LSP Package Name for cssls
+        'html-lsp', -- LSP Package Name for html
         'prettierd', -- Formatter (JS/TS/CSS/HTML/JSON/Markdown etc.)
         -- Markdown
         'marksman', -- LSP
@@ -487,21 +489,23 @@ require('lazy').setup({
 
       -- Configure mason-lspconfig
       require('mason-lspconfig').setup {
-        ensure_installed = vim.tbl_keys(servers), -- Ensure servers listed above are installed by Mason
+        -- Point to the servers defined above to ensure only those are handled by the default handler.
+        -- Server keys MUST be valid lspconfig server names recognized by mason-lspconfig.
+        ensure_installed = vim.tbl_keys(servers),
         automatic_installation = false, -- Don't automatically install based on filetype detection
         handlers = {
-          function(server_name) -- Default handler
+          function(server_name) -- Default handler for servers in the `servers` list
             local server_opts = servers[server_name] or {}
             server_opts.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_opts.capabilities or {})
             require('lspconfig')[server_name].setup(server_opts)
           end,
-          -- You can add custom handlers for specific servers here if needed
-          -- Example:
-          -- ["ruff_lsp"] = function()
-          --   require('lspconfig').ruff_lsp.setup({
-          --     capabilities = capabilities,
-          --     settings = { -- Add specific settings for ruff_lsp here }
-          --   })
+          -- Add custom handlers here ONLY if needed, otherwise rely on automatic detection after Mason install
+          -- Example (usually NOT needed if Mason puts tool in PATH):
+          -- ['ruff_lsp'] = function()
+          --   require('lspconfig').ruff_lsp.setup({ capabilities = capabilities })
+          -- end,
+          -- ['tsserver'] = function()
+          --   require('lspconfig').tsserver.setup({ capabilities = capabilities })
           -- end,
         },
       }
@@ -543,8 +547,6 @@ require('lazy').setup({
         yaml = { 'prettierd' },
         markdown = { 'prettierd' },
         bash = { 'shfmt' },
-        -- Example: Stop after first successful formatter
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
       },
     },
   },
@@ -631,7 +633,7 @@ require('lazy').setup({
   },
 
   -- Optional Kickstart plugins (Uncomment to enable)
-  -- require 'kickstart.plugins.debug', -- Requires manual update below
+  -- require 'kickstart.plugins.debug', -- Requires corresponding modification in debug.lua (Step 6)
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
