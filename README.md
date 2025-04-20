@@ -1,141 +1,85 @@
-# My Linux Development Environment Dotfiles
+# My Linux Development Environment Dotfiles (Optimized)
 
-This repository contains my personal configuration files (dotfiles) for setting up a development environment, primarily focused on WSL (Ubuntu/Debian) with a customized shell and Neovim.
+This repository contains personal configuration files (dotfiles) for setting up a development environment on Debian/Ubuntu-based Linux systems, including WSL. It features a customized Bash shell, a Neovim setup based on Kickstart.nvim, helper scripts, and aims for an easy, automated installation.
 
 ## Features
 
-* **Shell:** Bash configured with Oh My Posh for a themed prompt (using `jandedobbeleer.omp.json` modified for Python venv display).
-* **Terminal Welcome:** Custom startup message in `.bashrc` including a Figlet banner, time-based greeting, local weather (optional), and handy script list.
-* **Editor:** Neovim (v0.11.0+) configured using [Kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim) as a base.
-* **Neovim Features:** Includes setup for LSP (via Mason), autocompletion, fuzzy finding (Telescope), syntax highlighting (Treesitter), etc.
-* **Helper Scripts & Functions:** Utility scripts/functions for system maintenance, backups, project setup, searching, local web server, and Ollama interaction.
-* **Management:** Uses symbolic linking (`install_links.sh` script) to keep configurations version-controlled in this repository while active in the home directory.
+* **Automated Setup:** Uses `setup_wsl.sh` or `setup_linux.sh` scripts for one-command installation of dependencies and configuration linking.
+* **Shell:** Bash configured with Oh My Posh for a themed prompt (using a modified `jandedobbeleer.omp.json` theme).
+* **Terminal Welcome:** Custom startup message in `.bashrc` including a Figlet banner, time-based greeting, and helper script list.
+* **Editor:** Neovim (latest stable/nightly recommended) configured using Kickstart.nvim as a base.
+* **Neovim Features (via Mason):**
+    * **LSPs:** `lua-language-server`, `pyright`, `ruff-lsp`, `bash-language-server`, `typescript-language-server`, `html-lsp`, `css-lsp`, `marksman` (Markdown).
+    * **Linters:** `shellcheck`, `markdownlint` (included with `ruff-lsp` for Python).
+    * **Formatters:** `stylua` (Lua), `ruff_format` (Python), `shfmt` (Bash), `prettierd` (Web Dev, Markdown).
+    * **Debuggers:** `delve` (Go), `debugpy` (Python).
+    * *Easily add more tools via `:Mason` inside Neovim.*
+* **Helper Scripts & Functions:** Utility scripts/functions for system maintenance (`update-sys`), backups (`backup_dir.sh`), project setup (`new_pyproject.sh`, `new_webproject.sh`), searching (`rgf.sh`), local web server (`serve_here.sh`), and Ollama interaction (`ollama_chat.sh`). Includes interactive project launcher (`p` function).
+* **Management:** Uses symbolic linking (`dotfiles/install_links.sh` script, run automatically by setup scripts) to keep configurations version-controlled.
 
 ## Prerequisites
 
-Before setting up, ensure the following are installed on your target **Debian/Ubuntu-based Linux system** (like WSL):
+* A Debian/Ubuntu-based Linux system (including WSL). Other distributions might work with `setup_linux.sh` if dependencies are met.
+* Internet connection (for downloading dependencies).
+* Basic command-line tools: `git`, `curl`.
+* `sudo` access (for installing packages).
+* **(CRITICAL) Nerd Font Installed on Host OS:** See below.
 
-1.  **Core Tools:**
-    ```bash
-    sudo apt update && sudo apt upgrade -y
-    sudo apt install -y git curl wget unzip build-essential ca-certificates
-    ```
-2.  **Python Environment:** (Needed for Neovim plugins like `ruff` and helper scripts)
-    ```bash
-    sudo apt install -y python3 python3-pip python3-venv
-    ```
-3.  **Shell Customization Tools:**
-    * **Oh My Posh:** (Required for the prompt theme)
-        ```bash
-        # Installs to /usr/local/bin
-        sudo wget https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-amd64 -O /usr/local/bin/oh-my-posh
-        sudo chmod +x /usr/local/bin/oh-my-posh
-        ```
-    * **Figlet:** (Used for the welcome banner)
-        ```bash
-        sudo apt install -y figlet
-        ```
-    * **FZF:** (Required for the `p` project launcher function)
-         ```bash
-         sudo apt install -y fzf
-         ```
+## !! IMPORTANT: Nerd Font Installation !!
 
-4.  **Search Tools:** (Used by Telescope in Neovim and `rgf.sh`)
-    ```bash
-    sudo apt install -y ripgrep fd-find
-    # Create 'fd' symlink if needed (common on Debian/Ubuntu)
-    # Check if needed and create link:
-    if command -v fdfind &> /dev/null && ! command -v fd &> /dev/null; then sudo ln -s $(which fdfind) /usr/local/bin/fd; fi
-    ```
-5.  **Neovim (v0.11.0 or newer):** The version in standard `apt` repositories might be too old for the Kickstart configuration. Install manually:
-    * Go to [Neovim Releases](https://github.com/neovim/neovim/releases/latest).
-    * Download `nvim-linux64.tar.gz` (or arm64).
-    * Extract it.
-    * Move the *entire* `nvim-linux64` directory to `/opt/nvim-vX.Y.Z` (replace X.Y.Z with version).
-    * Create a symlink: `sudo ln -sf /opt/nvim-vX.Y.Z/bin/nvim /usr/local/bin/nvim`.
-    * *(This setup uses v0.11.0 installed via this method).*
+This setup heavily relies on icons provided by **Nerd Fonts** for both the Oh My Posh prompt and Neovim UI elements (like file icons, LSP signs). **You MUST install a Nerd Font on your *Host* Operating System** (the OS running your terminal emulator, e.g., Windows, macOS, or your Linux Desktop Environment) **AND configure your terminal emulator to use it.**
 
-6.  **Nerd Font (CRITICAL FOR ICONS):**
-    * You **MUST** install a [Nerd Font](https://www.nerdfonts.com/font-downloads) on your **Host Operating System** (e.g., Windows). Popular choices: Fira Code NF, Cascadia Code NF, JetBrains Mono NF, MesloLGS NF.
-    * Configure your **Terminal Emulator** (e.g., Windows Terminal) to *use* the installed Nerd Font for your Linux profile. Without this, icons in Oh My Posh and Neovim will **not** display correctly.
+1.  **Download a Nerd Font:** Go to the [Nerd Fonts Website](https://www.nerdfonts.com/font-downloads) and download a font that suits you. Popular choices include:
+    * FiraCode Nerd Font
+    * Cascadia Code Nerd Font (often default on Windows Terminal)
+    * JetBrainsMono Nerd Font
+    * MesloLGS Nerd Font
+2.  **Install the Font:** Follow instructions for your specific Host OS (Windows, macOS, Linux Desktop) to install the downloaded font files.
+3.  **Configure Your Terminal:** Open the settings for your terminal emulator (e.g., Windows Terminal, GNOME Terminal, iTerm2, Alacritty) and set the font for your Linux/WSL profile to the Nerd Font you just installed.
+
+**Failure to complete these steps will result in missing icons and a broken-looking UI.**
 
 ## Installation
 
 1.  **Clone this Repository:**
     ```bash
-    # Clone into ~/dotfiles (replace ~ with desired user home if not default)
-    git clone https://github.com/bdfabrications/Linux_Setup.git ~/dotfiles
+    # Choose a location, e.g., your home directory
+    git clone [https://github.com/](https://github.com/)<your_username>/<your_repo_name>.git ~/my_linux_setup
+    # Replace <your_username>/<your_repo_name> with your actual repo details
+    cd ~/my_linux_setup
     ```
-    *(Authentication via PAT or SSH key may be required).*
+    *(Authentication via PAT or SSH key may be required if your repo is private).*
 
-2.  **Navigate into the Repository:**
-    ```bash
-    cd ~/dotfiles
-    ```
-
-3.  **Run the Linking Script:** This script backs up existing default config files (to `~/.dotfiles_backup_...`) and creates symbolic links from standard locations (`~/.bashrc`, `~/.config/nvim`, etc.) to the corresponding files within this repository.
-    ```bash
-    ./install_links.sh
-    ```
-
-4.  **Reload Shell Configuration:** Apply the `.bashrc` changes (prompt, PATH, welcome message) or **close and restart your terminal/WSL session**.
-    ```bash
-    source ~/.bashrc
-    ```
-
-## Post-Installation Setup
-
-1.  **Neovim First Run (Plugin Installation):**
-    * Start Neovim: `nvim`
-    * The `lazy.nvim` plugin manager will automatically run and install all the plugins (defined in `~/dotfiles/config_nvim`). **Wait patiently** for this to complete.
-    * Once finished, **quit Neovim** (`:q`).
-    * **Restart Neovim:** `nvim`
-
-2.  **Install Language Tools via Mason:**
-    * Inside Neovim (after restarting), run `:Mason` to open the Mason package manager UI.
-    * Use `j`/`k` to navigate and `i` to install the Language Servers (LSPs), Linters, and Formatters needed for your development workflow.
-    * **Recommendations:**
-        * **LSP:** `bash-language-server`, `lua-language-server`, `jdtls` (needs JDK!), `html-lsp`, `css-lsp`, `typescript-language-server`, `pyright`
-        * **Linter:** `shellcheck`, `ruff`
-        * **Formatter:** `shfmt`, `stylua`, `prettier`, `ruff`
-    * Remember to install runtime prerequisites in WSL (e.g., `sudo apt install default-jdk` for `jdtls`).
-    * Close Mason with `q`.
-
-3.  **Install Ollama (Optional):**
-    * If you want to use the local AI assistant features:
+2.  **Run the Appropriate Setup Script:**
+    * **For WSL (Ubuntu/Debian):**
         ```bash
-        curl -fsSL https://ollama.com/install.sh | sh
-        # Pull desired models, e.g.:
-        ollama pull phi3
-        ollama pull llama3:8b
+        bash setup_wsl.sh
         ```
+    * **For Native Linux (attempts auto-detection for Debian/Fedora/Arch):**
+        ```bash
+        bash setup_linux.sh
+        ```
+    These scripts will:
+    * Install all necessary system dependencies.
+    * Install the latest stable Neovim.
+    * Install Oh My Posh.
+    * Install other required tools (fzf, ripgrep, fd, figlet, Ollama [optional]).
+    * Run the `dotfiles/install_links.sh` script to set up your configuration symlinks (backing up existing files).
+    * Run Neovim headlessly once to install plugins via `lazy.nvim`.
+    * *(Attempt to install default Mason tools - may require manual `:Mason` run in Neovim after first launch).*
 
-## Customization
+3.  **Restart Your Terminal:** After the script finishes, close and reopen your terminal/WSL session completely to ensure all changes (PATH, `.bashrc`, prompt) take effect.
 
-* **Weather:** To enable the weather display in the welcome message, edit `~/dotfiles/bashrc_config` (which is linked to `~/.bashrc`), find the `--- 3. Display Weather ---` section, uncomment the lines, and set the `LOCATION` variable.
-* **Oh My Posh Theme:** The theme used is defined in `~/dotfiles/bashrc_config` in the `oh-my-posh init` line (`--config` flag). The theme file itself (`jandedobbeleer.omp.json` modified for venv) is in `~/dotfiles/poshthemes`. Edit the JSON file to change colors/segments or change the theme file path in `.bashrc` to use a different theme.
-* **Neovim:** Configuration is in `~/dotfiles/config_nvim`. Edit `init.lua` and files under `lua/` to modify Neovim behavior, plugins, and keymaps.
+4.  **First Neovim Launch:**
+    * Run `nvim`.
+    * If the setup script didn't automatically install Mason tools, run `:Mason` to check their status and install any missing ones from the default list if needed.
 
-## Included Scripts / Functions (`~/bin`)
+## Included Helper Scripts / Functions (`~/bin`)
 
-The following are included and linked into `~/bin` (which is added to your PATH by `.bashrc`):
+(Accessed via your PATH, symlinked from `dotfiles/bin`)
 
-* **(Function in `.bashrc`) `p`**: Interactively select a project directory from `~/projects` using `fzf`, change into it, automatically activate `.venv` or `venv` if found, and launch `nvim`. Usage: `p`
-* `update_system.sh`: Updates system packages (`apt update`, `upgrade`, `autoremove`, `clean`).
-    * **Usage:** `update-sys` (This alias defined in `.bashrc` runs the script with `sudo` and prompts for your password).
-* `backup_dir.sh`: Creates a timestamped `.tar.gz` backup of a specified directory. Stores backups in `~/backups` by default.
-    * **Usage:** `backup_dir.sh <directory_to_backup>`
-* `new_pyproject.sh`: Creates a basic Python project folder with `git init`, a `.venv`, and a standard Python `.gitignore`.
-    * **Usage:** `new_pyproject.sh <ProjectName>`
-* `rgf.sh`: Quick recursive text search using `ripgrep` (case-insensitive, shows line numbers).
-    * **Usage:** `rgf.sh <pattern> [path]`
-* `serve_here.sh`: Starts a simple Python HTTP web server in the current directory for local file sharing/testing.
-    * **Usage:** `serve_here.sh [port]` (Defaults to port 8000)
-* `ollama_chat.sh`: Ensures Ollama server is running (starts if needed) and begins an interactive chat with the specified model.
-    * **Usage:** `ollama_chat.sh [model_name]` (Defaults to `phi3`)
-
-## License
-
-(Consider adding a license, e.g., MIT, if sharing publicly)
-
----
+* **`p` (function in `.bashrc`):** Interactively select `~/projects` directory using `fzf`, `cd` into it, activate venv (`.venv`/`venv`), launch `nvim`. Usage: `p`
+* **`update-sys` (alias for `sudo ~/bin/update_system.sh`):** Updates system packages (`apt update`, `upgrade`, `autoremove`, `clean`). Prompts by default; use `update-sys -y` to skip prompts.
+* **`backup_dir.sh`:** Creates timestamped `.tar.gz` backup of a directory into `$HOME/backups`. Usage: `backup_dir.sh <directory_to_backup>`
+* **`new_pyproject.sh`:** Creates Python project folder in `~/projects` with `git init`, `.venv`, `.gitignore`. Usage: `new_pyproject.sh <ProjectName>`
+* **`new_webproject.sh`:** Creates HTML/CSS/JS project in `~/projects` with `git init`, boilerplate, `.gitignore`, first commit, opens `nvim`. Usage: `new_webproject.sh <ProjectName>`
