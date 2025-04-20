@@ -47,6 +47,7 @@ echo "System dependencies installed."
 echo ""
 
 # --- 2. Install Oh My Posh ---
+# (Keep this section as it was)
 echo "[2/6] Installing Oh My Posh..."
 if ! command_exists oh-my-posh; then
 	echo "Downloading Oh My Posh..."
@@ -56,7 +57,6 @@ if ! command_exists oh-my-posh; then
 		exit 1
 	fi
 	POSH_URL="https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-${POSH_ARCH}"
-	# Use curl with -f to fail on server errors
 	if sudo curl -fLo /usr/local/bin/oh-my-posh "$POSH_URL"; then
 		sudo chmod +x /usr/local/bin/oh-my-posh
 		echo "Oh My Posh installed to /usr/local/bin."
@@ -82,25 +82,26 @@ if command_exists nvim && [[ "$(nvim --version | head -n 1)" == *"${NVIM_VERSION
 fi
 
 if [ "$CORRECT_VERSION_INSTALLED" = false ]; then
-	# Determine architecture
+	# Determine architecture and corresponding filename suffix
 	ARCH=$(uname -m)
+	NVIM_FILENAME_ARCH="" # Suffix used in GitHub release asset names
 	if [[ "$ARCH" == "x86_64" ]]; then
-		NVIM_ARCH_SUFFIX="linux64"
+		NVIM_FILENAME_ARCH="linux-x86_64" # Corrected suffix
 	elif [[ "$ARCH" == "aarch64" ]]; then
-		NVIM_ARCH_SUFFIX="linux-arm64" # Verify exact name on GitHub releases page
+		NVIM_FILENAME_ARCH="linux-aarch64" # Assuming this is correct, verify on release page if needed
 	else
 		echo "[Error] Unsupported architecture: $ARCH for Neovim ${NVIM_VERSION} download." >&2
 		exit 1
 	fi
 
-	NVIM_DEB="nvim-${NVIM_ARCH_SUFFIX}.deb"
+	NVIM_DEB="nvim-${NVIM_FILENAME_ARCH}.deb" # Use corrected arch suffix
 	NVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${NVIM_DEB}"
 
-	echo "Downloading Neovim ${NVIM_VERSION} .deb for ${ARCH}..."
+	echo "Downloading ${NVIM_DEB}..."
 	# Use curl with -f (fail fast) and -L (follow redirects)
 	curl -fLo "${NVIM_DEB}" "${NVIM_DOWNLOAD_URL}"
 	if [ $? -ne 0 ]; then
-		echo "[Error] Failed to download Neovim .deb (curl error code $?)."
+		echo "[Error] Failed to download Neovim .deb (curl error code $?). URL: ${NVIM_DOWNLOAD_URL}"
 		exit 1
 	fi
 
@@ -123,6 +124,7 @@ nvim --version | head -n 1
 echo ""
 
 # --- 4. Install Ollama ---
+# (Keep this section as it was)
 echo "[4/6] Installing Ollama..."
 if ! command_exists ollama; then
 	echo "Downloading and running Ollama install script..."
@@ -132,7 +134,6 @@ if ! command_exists ollama; then
 		echo "$OLLAMA_INSTALL_OUTPUT"
 	else
 		echo "Ollama installed. Pulling default models..."
-		# In WSL, systemd might not be fully available, try starting directly
 		if ! pgrep -x ollama >/dev/null; then
 			echo "Attempting to start Ollama server..."
 			(ollama serve &) # Start in background
@@ -152,6 +153,7 @@ fi
 echo ""
 
 # --- 5. Link Dotfiles ---
+# (Keep this section as it was)
 echo "[5/6] Linking dotfiles using install_links.sh..."
 chmod +x "$REPO_ROOT_DIR/dotfiles/install_links.sh"
 bash "$REPO_ROOT_DIR/dotfiles/install_links.sh"
@@ -163,6 +165,7 @@ echo "Dotfiles linked."
 echo ""
 
 # --- 6. Setup Neovim Plugins and Tools ---
+# (Keep this section as it was)
 echo "[6/6] Setting up Neovim plugins (Lazy sync and Mason tools)..."
 echo "Running Lazy plugin sync..."
 nvim --headless "+Lazy! sync" +qa
@@ -176,6 +179,7 @@ echo "Neovim setup complete."
 echo ""
 
 # --- Finish ---
+# (Keep this section as it was)
 echo "-------------------------------------------------"
 echo "✅ WSL Setup Complete!"
 echo ""

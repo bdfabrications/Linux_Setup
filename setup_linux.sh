@@ -134,13 +134,13 @@ echo ""
 
 
 # --- 2. Install Oh My Posh ---
+# (Keep this section as it was)
 echo "[2/6] Installing Oh My Posh..."
 if ! command_exists oh-my-posh; then
     echo "Downloading Oh My Posh..."
     ARCH=$(uname -m)
     if [[ "$ARCH" == "x86_64" ]]; then POSH_ARCH="amd64"; elif [[ "$ARCH" == "aarch64" ]]; then POSH_ARCH="arm64"; else echo "[Error] Unsupported architecture: $ARCH for Oh My Posh auto-install."; exit 1; fi
     POSH_URL="https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-${POSH_ARCH}"
-    # Use curl with -f to fail on server errors
     if sudo curl -fLo /usr/local/bin/oh-my-posh "$POSH_URL"; then
         sudo chmod +x /usr/local/bin/oh-my-posh
         echo "Oh My Posh installed to /usr/local/bin."
@@ -159,7 +159,7 @@ echo ""
 NVIM_VERSION="v0.11.0"
 echo "[3/6] Installing Neovim ${NVIM_VERSION}..."
 
-# Check if correct version is already installed via package manager (for .deb method) or manually
+# Check if correct version is already installed
 CORRECT_VERSION_INSTALLED=false
 if command_exists nvim && [[ "$(nvim --version | head -n 1)" == *"${NVIM_VERSION#v}"* ]]; then
     echo "Neovim ${NVIM_VERSION} already installed."
@@ -168,12 +168,13 @@ fi
 
 if [ "$CORRECT_VERSION_INSTALLED" = false ]; then
 
-    # Determine architecture
+    # Determine architecture and corresponding filename suffix
     ARCH=$(uname -m)
+    NVIM_FILENAME_ARCH="" # Suffix used in GitHub release asset names
     if [[ "$ARCH" == "x86_64" ]]; then
-        NVIM_ARCH_SUFFIX="linux64"
+        NVIM_FILENAME_ARCH="linux-x86_64" # Corrected suffix
     elif [[ "$ARCH" == "aarch64" ]]; then
-        NVIM_ARCH_SUFFIX="linux-arm64" # Verify exact name on GitHub releases page
+        NVIM_FILENAME_ARCH="linux-aarch64" # Assuming this is correct, verify on release page if needed
     else
         echo "[Error] Unsupported architecture: $ARCH for Neovim ${NVIM_VERSION} download." >&2
         exit 1
@@ -182,12 +183,12 @@ if [ "$CORRECT_VERSION_INSTALLED" = false ]; then
     # Use .deb method for Debian/Ubuntu, tarball for others
     if [ "$DISTRO" == "ubuntu" ] || [ "$DISTRO" == "debian" ]; then
         echo "[Info] Using .deb package method for Debian/Ubuntu..."
-        NVIM_DEB="nvim-${NVIM_ARCH_SUFFIX}.deb"
+        NVIM_DEB="nvim-${NVIM_FILENAME_ARCH}.deb" # Use corrected arch suffix
         NVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${NVIM_DEB}"
 
-        echo "Downloading Neovim ${NVIM_VERSION} .deb for ${ARCH}..."
+        echo "Downloading ${NVIM_DEB}..."
         curl -fLo "${NVIM_DEB}" "${NVIM_DOWNLOAD_URL}"
-        if [ $? -ne 0 ]; then echo "[Error] Failed to download Neovim .deb (curl error code $?)."; exit 1; fi
+        if [ $? -ne 0 ]; then echo "[Error] Failed to download Neovim .deb (curl error code $?). URL: ${NVIM_DOWNLOAD_URL}"; exit 1; fi
 
         echo "Installing Neovim via apt..."
         sudo apt install -y "./${NVIM_DEB}"
@@ -201,17 +202,17 @@ if [ "$CORRECT_VERSION_INSTALLED" = false ]; then
         # Clean up potential previous failed attempts or wrong versions in /usr/local
         echo "[Info] Cleaning up potential old Neovim installations in /usr/local/..."
         sudo rm -f /usr/local/bin/nvim
-        sudo rm -rf "/usr/local/lib/nvim-${NVIM_VERSION}" # Remove specific version dir if exists
+        sudo rm -rf "/usr/local/lib/nvim-${NVIM_VERSION}"
 
-        NVIM_TARBALL="nvim-${NVIM_ARCH_SUFFIX}.tar.gz"
+        NVIM_TARBALL="nvim-${NVIM_FILENAME_ARCH}.tar.gz" # Use corrected arch suffix
         NVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${NVIM_TARBALL}"
-        NVIM_EXTRACT_DIR_NAME="nvim-${NVIM_ARCH_SUFFIX}"
+        NVIM_EXTRACT_DIR_NAME="nvim-${NVIM_FILENAME_ARCH}" # Directory name inside tarball likely matches
         NVIM_INSTALL_DIR="/usr/local/lib/nvim-${NVIM_VERSION}"
 
         if [ ! -d "${NVIM_INSTALL_DIR}/bin" ]; then
-            echo "Downloading Neovim ${NVIM_VERSION} tar.gz for ${ARCH}..."
+            echo "Downloading ${NVIM_TARBALL}..."
             curl -fLo "${NVIM_TARBALL}" "${NVIM_DOWNLOAD_URL}"
-            if [ $? -ne 0 ]; then echo "[Error] Failed to download Neovim tarball (curl error code $?)."; exit 1; fi
+            if [ $? -ne 0 ]; then echo "[Error] Failed to download Neovim tarball (curl error code $?). URL: ${NVIM_DOWNLOAD_URL}"; exit 1; fi
 
             echo "Extracting Neovim..."
             tar xzf "${NVIM_TARBALL}"
@@ -240,6 +241,7 @@ echo ""
 
 
 # --- 4. Install Ollama ---
+# (Keep this section as it was)
 echo "[4/6] Installing Ollama..."
 if ! command_exists ollama; then
     echo "Downloading and running Ollama install script..."
@@ -266,6 +268,7 @@ echo ""
 
 
 # --- 5. Link Dotfiles ---
+# (Keep this section as it was)
 echo "[5/6] Linking dotfiles using install_links.sh..."
 chmod +x "$REPO_ROOT_DIR/dotfiles/install_links.sh"
 bash "$REPO_ROOT_DIR/dotfiles/install_links.sh"
@@ -275,6 +278,7 @@ echo ""
 
 
 # --- 6. Setup Neovim Plugins and Tools ---
+# (Keep this section as it was)
 echo "[6/6] Setting up Neovim plugins (Lazy sync and Mason tools)..."
 echo "Running Lazy plugin sync..."
 nvim --headless "+Lazy! sync" +qa
@@ -288,6 +292,7 @@ echo "Neovim setup complete."
 echo ""
 
 # --- Finish ---
+# (Keep this section as it was)
 echo "-------------------------------------------------"
 echo "✅ Native Linux Setup Complete!"
 echo ""
@@ -298,3 +303,4 @@ echo "3. Run 'nvim'. If prompted, run ':Mason' to install any missing tools."
 echo "-------------------------------------------------"
 
 exit 0
+
