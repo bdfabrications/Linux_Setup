@@ -1,6 +1,6 @@
 #!/bin/bash
 # Setup script for Native Linux environments (Debian/Ubuntu, Fedora, Arch).
-# Detects distro, installs dependencies, Neovim v0.11.0 (using tar.gz),
+# Detects distro, installs dependencies (incl. Node.js), Neovim v0.11.0 (using tar.gz),
 # Oh My Posh, links dotfiles, and sets up Neovim plugins.
 
 # Exit immediately if a command exits with a non-zero status.
@@ -58,18 +58,19 @@ DISTRO=$(detect_distro)
 echo "[Info] Detected distribution: $DISTRO"
 
 # --- 1. Install System Dependencies (Distro Specific) ---
-echo "[1/6] Installing system dependencies for $DISTRO..."
+echo "[1/7] Installing system dependencies for $DISTRO..." # Step count increased
 
 # Define core dependencies - adjust package names per distro as needed
-# Common: git, curl, wget, build tools, python3, pip3, venv, figlet, fzf, ripgrep, fd, unzip, ca-certs, tar
+# Common: git, curl, wget, build tools, python3, pip3, venv, figlet, fzf, ripgrep, fd, unzip, ca-certs, tar, nodejs, npm
 PACKAGES_DEBIAN="git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip"
-PACKAGES_FEDORA="git curl wget make automake gcc gcc-c++ kernel-devel tar python3 python3-pip python3-virtualenv figlet fzf ripgrep fd-find unzip ca-certificates"
-PACKAGES_ARCH="git curl wget base-devel tar python python-pip python-venv figlet fzf ripgrep fd unzip ca-certificates"
+PACKAGES_FEDORA="git curl wget make automake gcc gcc-c++ kernel-devel tar python3 python3-pip python3-virtualenv figlet fzf ripgrep fd-find unzip ca-certificates nodejs npm" # Add nodejs/npm here
+PACKAGES_ARCH="git curl wget base-devel tar python python-pip python-venv figlet fzf ripgrep fd unzip ca-certificates nodejs npm"                                             # Add nodejs/npm here
 
 INSTALL_CMD=""
 UPDATE_CMD=""
 REMOVE_NVIM_CMD_BASE="" # Store only the base command here
 PACKAGES=""
+NEEDS_NODESOURCE=false
 
 case "$DISTRO" in
 ubuntu | debian)
@@ -77,26 +78,27 @@ ubuntu | debian)
     INSTALL_CMD="sudo apt install -y"
     REMOVE_NVIM_CMD_BASE="sudo apt remove --purge neovim neovim-runtime -y" # Base command without || true
     PACKAGES="$PACKAGES_DEBIAN"
-    ;; # Terminator for this block
+    NEEDS_NODESOURCE=true # Use NodeSource for up-to-date Node on Debian/Ubuntu
+    ;;
 fedora)
     UPDATE_CMD="sudo dnf check-update"
     INSTALL_CMD="sudo dnf install -y"
     REMOVE_NVIM_CMD_BASE="sudo dnf remove neovim -y"
-    PACKAGES="$PACKAGES_FEDORA"
-    ;; # <<<< CORRECTED: Added missing terminator here
+    PACKAGES="$PACKAGES_FEDORA" # Includes nodejs/npm
+    ;;
 arch | manjaro)
     # UPDATE_CMD="sudo pacman -Syu --noconfirm" # Uncomment if full system upgrade is desired
     INSTALL_CMD="sudo pacman -S --noconfirm --needed"
     REMOVE_NVIM_CMD_BASE="sudo pacman -Rns neovim --noconfirm"
-    PACKAGES="$PACKAGES_ARCH"
-    ;; # Terminator for this block
+    PACKAGES="$PACKAGES_ARCH" # Includes nodejs/npm
+    ;;
 *)
     echo "[Error] Unsupported distribution: $DISTRO. Cannot install dependencies automatically." >&2
     echo "Please install the following or their equivalents manually:" >&2
     echo "  git, curl, wget, build-essential/base-devel, tar, python3, python3-pip, python3-venv," >&2
-    echo "  figlet, fzf, ripgrep, fd-find/fd, unzip, ca-certificates" >&2
+    echo "  figlet, fzf, ripgrep, fd-find/fd, unzip, ca-certificates, nodejs, npm" >&2
     exit 1
-    ;; # Terminator for this block
+    ;;
 esac
 
 # Update package manager cache (if applicable for distro)
@@ -110,6 +112,25 @@ if [ -n "$REMOVE_NVIM_CMD_BASE" ]; then
     echo "Attempting to remove existing package manager Neovim (if any)..."
     # Execute the base command and add '|| true' here to ignore errors
     $REMOVE_NVIM_CMD_BASE || true
+fi
+
+# Install NodeSource repo if needed (Debian/Ubuntu)
+if [ "$NEEDS_NODESOURCE" = true ]; then
+    if ! command_exists node || ! command_exists npm; then
+        echo "Installing Node.js and npm via NodeSource..."
+        # Check if curl is installed before using it
+        if ! command_exists curl; then
+            echo "[Error] curl is required to setup NodeSource repository."
+            exit 1
+        fi
+        # Use NodeSource setup script for Node LTS (modify version if needed, e.g., node_20.x)
+        NODE_MAJOR=20 # Specify desired major LTS version
+        curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | sudo -E bash -
+        # Install Node.js and npm
+        sudo apt install nodejs -y
+    else
+        echo "Node.js/npm already installed."
+    fi
 fi
 
 # Install packages
@@ -135,8 +156,8 @@ echo "System dependencies installed."
 echo ""
 
 # --- 2. Install Oh My Posh ---
-# (Keep this section as it was)
-echo "[2/6] Installing Oh My Posh..."
+# (Step count increases due to Node install step)
+echo "[2/7] Installing Oh My Posh..."
 if ! command_exists oh-my-posh; then
     echo "Downloading Oh My Posh..."
     ARCH=$(uname -m)
@@ -159,10 +180,8 @@ oh-my-posh --version
 echo ""
 
 # --- 3. Install Neovim v0.11.0 (tar.gz method) ---
-# (Keep this section as it was)
+echo "[3/7] Installing Neovim v0.11.0 (tar.gz method)..."
 NVIM_VERSION="v0.11.0"
-echo "[3/6] Installing Neovim ${NVIM_VERSION} (tar.gz method)..."
-
 CORRECT_VERSION_INSTALLED=false
 NVIM_INSTALL_DIR="/usr/local/lib/nvim-${NVIM_VERSION}"
 if command_exists nvim && [[ "$(nvim --version | head -n 1)" == *"${NVIM_VERSION#v}"* ]]; then
@@ -235,73 +254,49 @@ nvim --version | head -n 1
 echo ""
 
 # --- 4. Install Ollama ---
-# (Keep this section as it was, with refactored startup)
-echo "[4/6] Installing Ollama..."
+echo "[4/7] Installing Ollama..."
+# (Keep Ollama section as it was, with refactored startup)
 if ! command_exists ollama; then
     echo "Downloading and running Ollama install script..."
     OLLAMA_INSTALL_OUTPUT=$(curl -fsSL https://ollama.com/install.sh | sh)
     if [ $? -ne 0 ]; then
-        echo "[Warning] Ollama installation script failed. Continuing without it."
-        echo "Install script output:"
+        echo "[Warning] Ollama installation script failed."
         echo "$OLLAMA_INSTALL_OUTPUT"
     else
         echo "Ollama installed successfully."
         echo "Attempting to pull default models (this might take time)..."
-
-        # --- Refactored Ollama Startup ---
         OLLAMA_STARTED=false
-        # Try systemd first
         if command_exists systemctl; then
             echo "[Info] Attempting to start Ollama via systemctl..."
-            # Use '|| true' to prevent exit if systemctl start fails
             if sudo systemctl start ollama || true; then
-                # Check if it actually started after attempting
                 if systemctl is-active --quiet ollama; then
-                    echo "[Info] Ollama started via systemctl."
                     OLLAMA_STARTED=true
-                    sleep 2 # Short wait for service
-                else
-                    echo "[Warning] 'systemctl start ollama' command finished, but service is not active. Will try direct command..."
-                fi
-            else
-                # This case might not be reached if || true is used, but kept for robustness
-                echo "[Warning] 'systemctl start ollama' command failed. Will try direct command..."
-            fi
+                    echo "[Info] Ollama started via systemctl."
+                    sleep 2
+                else echo "[Warning] 'systemctl start ollama' command finished, but service is not active. Will try direct command..."; fi
+            else echo "[Warning] 'systemctl start ollama' command failed. Will try direct command..."; fi
         fi
-        # If systemd failed or doesn't exist, try direct command
         if [ "$OLLAMA_STARTED" = false ]; then
             echo "[Info] Attempting to start Ollama directly..."
-            # Use '|| true' here as well, just in case 'ollama serve &' fails immediately
             (ollama serve &) || true
-            # Check if the process exists after attempting to start
-            sleep 5 # Give it more time if started directly
+            sleep 5
             if pgrep -x ollama >/dev/null; then
-                echo "[Info] Ollama serve command issued and process found."
                 OLLAMA_STARTED=true
-            else
-                echo "[Warning] Failed to find ollama process after attempting direct start."
-            fi
+                echo "[Info] Ollama serve command issued and process found."
+            else echo "[Warning] Failed to find ollama process after attempting direct start."; fi
         fi
-        # --- End Refactored Startup ---
-
-        # Check if server is running before pulling models
         if [ "$OLLAMA_STARTED" = true ] && (pgrep -x ollama >/dev/null || (command_exists systemctl && systemctl is-active --quiet ollama)); then
             echo "[Info] Ollama server appears running. Initiating model downloads..."
             (ollama pull llama3:8b && echo "[Info] Pulled llama3:8b") &
             (ollama pull phi3 && echo "[Info] Pulled phi3") &
             echo "[Info] Default model downloads initiated in background. Check progress with 'ollama list'."
-        else
-            echo "[Warning] Ollama server doesn't seem to be running after startup attempts. Skipping model download."
-        fi
+        else echo "[Warning] Ollama server doesn't seem to be running after startup attempts. Skipping model download."; fi
     fi
-else
-    echo "Ollama already installed."
-fi
+else echo "Ollama already installed."; fi
 echo ""
 
 # --- 5. Link Dotfiles ---
-# (Keep this section as it was)
-echo "[5/6] Linking dotfiles using install_links.sh..."
+echo "[5/7] Linking dotfiles using install_links.sh..."
 chmod +x "$REPO_ROOT_DIR/dotfiles/install_links.sh"
 bash "$REPO_ROOT_DIR/dotfiles/install_links.sh"
 if [ $? -ne 0 ]; then
@@ -312,28 +307,28 @@ echo "Dotfiles linked."
 echo ""
 
 # --- 6. Setup Neovim Plugins and Tools ---
-# (Keep this section as it was)
-echo "[6/6] Setting up Neovim plugins (Lazy sync and Mason tools)..."
-echo "Running Lazy plugin sync..."
+echo "[6/7] Setting up Neovim plugins (Lazy sync)..."
 nvim --headless "+Lazy! sync" +qa
 if [ $? -ne 0 ]; then echo "[Warning] Neovim Lazy sync failed. Run ':Lazy sync' manually inside nvim."; fi
+echo "Lazy sync complete."
+echo ""
 
-echo "Attempting to install default Mason tools (LSPs, linters, etc.)..."
+# --- 7. Install Mason Tools ---
+echo "[7/7] Attempting to install default Mason tools (LSPs, linters, etc.)..."
+# Note: This might occasionally fail depending on network or Mason state.
 nvim --headless "+MasonInstallAll" +qa
 if [ $? -ne 0 ]; then echo "[Warning] Neovim MasonInstallAll command encountered issues. Run ':Mason' inside nvim to check/install tools manually."; fi
-
-echo "Neovim setup complete."
+echo "Mason tool installation attempt complete."
 echo ""
 
 # --- Finish ---
-# (Keep this section as it was)
 echo "-------------------------------------------------"
 echo "✅ Native Linux Setup Complete!"
 echo ""
 echo "IMPORTANT NEXT STEPS:"
 echo "1. **RESTART YOUR TERMINAL/SHELL** for all changes to take effect."
 echo "2. Ensure you have installed a **Nerd Font** on your Desktop Environment and configured your terminal emulator."
-echo "3. Run 'nvim'. If prompted, run ':Mason' to install any missing tools."
+echo "3. Run 'nvim'. Check ':Mason' status if needed."
 echo "-------------------------------------------------"
 
 exit 0
