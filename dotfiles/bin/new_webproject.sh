@@ -5,6 +5,12 @@
 # Exit immediately if a command fails (except where explicitly handled)
 set -e
 
+#--- Helper Functions ---
+#Define command_exists function needed later in the script
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
 # --- Configuration ---
 PROJECTS_BASE_DIR="$HOME/projects"
 
