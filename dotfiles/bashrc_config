@@ -84,7 +84,7 @@ export PATH
 echo "" # Start with a blank line
 
 # Configuration for Welcome Message
-LOCATION="78070" # Set default, remind user to change if needed
+LOCATION="" # Set default, remind user to change if needed
 FIGLET_TEXT="o7 Tester" # Text for the figlet banner
 
 # Dependencies Check for Welcome Message
