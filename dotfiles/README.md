@@ -44,8 +44,7 @@ This setup heavily relies on icons provided by **Nerd Fonts** for both the Oh My
 1.  **Clone this Repository:**
     ```bash
     # Choose a location, e.g., your home directory
-    git clone [https://github.com/](https://github.com/)<your_username>/<your_repo_name>.git ~/my_linux_setup
-    # Replace <your_username>/<your_repo_name> with your actual repo details
+    git clone https://github.com/bdfabrications/Linux_setup.git ~/my_linux_setup
     cd ~/my_linux_setup
     ```
     *(Authentication via PAT or SSH key may be required if your repo is private).*
