@@ -2,6 +2,44 @@
 # Creates a basic HTML/CSS/JS project structure inside ~/projects.
 # Includes Git init, boilerplate files, first commit, and opens Neovim.
 
+# --- Help Function ---
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTION] <ProjectName>
+
+Creates a complete boilerplate project for a simple HTML/CSS/JS web application.
+
+Arguments:
+  <ProjectName>   The name of the project to create. This will be the directory
+                  name. It should not contain spaces or special characters.
+
+Options:
+  -h, --help      Display this help message and exit.
+
+Description:
+  This script automates the creation of a standard project structure. It performs
+  the following steps:
+  1. Creates a main project directory inside '$HOME/projects'.
+  2. Creates subdirectories: 'css', 'js', and 'images'.
+  3. Generates boilerplate files: 'index.html', 'css/styles.css', and 'js/script.js'.
+  4. Creates a 'README.md' file with the project name.
+  5. Initializes a Git repository, creates a '.gitignore' file, and makes the
+     initial commit (if 'git' is installed).
+  6. Opens the entire project directory in Neovim (if 'nvim' is installed).
+
+Configuration:
+  The base directory for all projects can be changed by editing the
+  PROJECTS_BASE_DIR variable at the top of the script. The default is:
+  PROJECTS_BASE_DIR="\$HOME/projects"
+EOF
+}
+
+# --- Argument Parsing for Help ---
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
 # Exit immediately if a command fails (except where explicitly handled)
 set -e
 
@@ -16,8 +54,9 @@ PROJECTS_BASE_DIR="$HOME/projects"
 
 # --- Input Validation ---
 if [ -z "$1" ]; then
-    echo "Usage: $0 <ProjectName>" >&2
-    echo "       <ProjectName> should not contain spaces or special characters." >&2
+    echo "Error: ProjectName is a required argument." >&2
+    echo "Usage: $(basename "$0") <ProjectName>" >&2
+    echo "Use '$(basename "$0") --help' for more details." >&2
     exit 1
 fi
 
@@ -58,7 +97,7 @@ fi
 # Check if project directory already exists
 if [ -d "$PROJECT_DIR" ]; then
     echo "Error: Project directory '$PROJECT_DIR' already exists." >&2
-    exit 1 # ERR trap will call cleanup
+    exit 1
 fi
 
 echo "--- Creating web project: $PROJECT_NAME in $PROJECTS_BASE_DIR ---"
@@ -206,8 +245,8 @@ EOG
     # Check if user name/email is configured for Git
     if ! git config --get user.name >/dev/null || ! git config --get user.email >/dev/null; then
         echo "[Warning] Git user name/email not configured locally or globally." >&2
-        echo "           Commit might fail or use default system values." >&2
-        echo "           Configure globally using: git config --global user.name 'Your Name'" >&2
+        echo "          Commit might fail or use default system values." >&2
+        echo "          Configure globally using: git config --global user.name 'Your Name'" >&2
         echo "                                      git config --global user.email 'you@example.com'" >&2
     fi
 
