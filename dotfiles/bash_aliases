@@ -26,4 +26,5 @@ alias backupd='$HOME/bin/backup_dir.sh'
 alias rgf='$HOME/bin/rgf.sh'
 alias serveh='$HOME/bin/serve_here.sh'
 alias ochat='$HOME/bin/ollama_chat.sh'
+alias syncd='$HOME/bin/sync_backup.sh'
 # --- End Custom Aliases ---
