@@ -63,7 +63,7 @@ fi
 
 # Initialize Oh My Posh prompt
 # Make sure oh-my-posh binary is found correctly
-if command -v oh-my-posh &> /dev/null; then
+if command -v oh-my-posh &>/dev/null; then
     eval "$(oh-my-posh init bash --config "$HOME/.poshthemes/jandedobbeleer.omp.json")"
 else
     echo "[Warning] oh-my-posh command not found. Cannot initialize prompt theme." >&2
@@ -79,12 +79,11 @@ if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
 fi
 export PATH
 
-
 # --- Custom Welcome Message ---
 echo "" # Start with a blank line
 
 # Configuration for Welcome Message
-LOCATION="" # Set default, remind user to change if needed
+LOCATION=""             # Set default, remind user to change if needed
 FIGLET_TEXT="o7 Tester" # Text for the figlet banner
 
 # Dependencies Check for Welcome Message
@@ -99,12 +98,12 @@ else
     echo "      Welcome Back!"
     echo "============================="
 fi
-echo "" 
+echo ""
 
 # 2. Display Time-Based Greeting
 CURRENT_HOUR=$(date +%H)
-USERNAME=$(whoami) 
-GREETING="Good evening" 
+USERNAME=$(whoami)
+GREETING="Good evening"
 if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
     GREETING="Good morning"
 elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
@@ -135,22 +134,28 @@ echo ""
 # --- Handy Scripts ---
 echo "Available custom commands:"
 echo ""
-echo "  update-sys    - Update system packages (needs sudo password)" 
+echo "  update-sys    - Update system packages (needs sudo password)"
 echo "  newweb <Name> - Create basic HTML/CSS/JS project structure (incl. Git)"
-echo "  newpy <Name>  - Create Python project structure (incl. Git, .venv, .gitignore)" 
-echo "  p             - Select project (in ~/projects), cd, activate venv (if found), open nvim" 
+echo "  newpy <Name>  - Create Python project structure (incl. Git, .venv, .gitignore)"
+echo "  p             - Select project (in ~/projects), cd, activate venv (if found), open nvim"
 echo ""
-echo "  backupd <dir> - Create backup of <dir> in ~/backups" 
+echo "  backupd <dir> - Create backup of <dir> in ~/backups"
 echo "  serveh [port] - Start simple web server in current directory"
 echo "  rgf <pat> [path] - Search for text using ripgrep"
 echo "  ochat [model] - Start interactive chat with Ollama (default: ollama3:8b)"
-echo "" 
+echo ""
 echo "* Python Tip: For Python projects not created via script,"
 echo "  run 'python3 -m venv .venv' inside the project root. The 'p' command"
 echo "  will then automatically activate it when you select that project."
-echo "" 
+echo ""
+echo "* Advanced Commands:"
+echo ""
+echo " syncd <srcDir> <destDir>"
+echo " Copies new files from the source directory to the destination directory,"
+echo " updates all files in the destionation directory to mirror the source directory,"
+echo " and Deletes any files from the destination directory that are no longer present in the source directory."
+echo ""
 # --- End Custom Welcome Message ---
-
 
 # Function to cd into a project dir selected via fzf, activate venv, and open nvim
 p() {
@@ -159,11 +164,11 @@ p() {
     local selected_proj_path
 
     # Check if fzf command exists
-    if ! command -v fzf &> /dev/null; then
-        echo "Error: fzf command not found. Install with 'sudo apt install fzf'." >&2 
+    if ! command -v fzf &>/dev/null; then
+        echo "Error: fzf command not found. Install with 'sudo apt install fzf'." >&2
         return 1
     fi
-    
+
     # Check if the base project directory exists
     if [ ! -d "$PROJECTS_BASE_DIR" ]; then
         echo "Error: Project base directory '$PROJECTS_BASE_DIR' not found." >&2
@@ -173,8 +178,8 @@ p() {
 
     # Use find (or fd if available) to list directories one level deep
     echo "Searching for projects in $PROJECTS_BASE_DIR..." >&2 # Send search message to stderr
-    if command -v fd &> /dev/null; then
-         selected_proj_path=$(fd . "$PROJECTS_BASE_DIR" --type d --max-depth 1 | fzf --height 40% --reverse --prompt="Select Project > ")
+    if command -v fd &>/dev/null; then
+        selected_proj_path=$(fd . "$PROJECTS_BASE_DIR" --type d --max-depth 1 | fzf --height 40% --reverse --prompt="Select Project > ")
     else
         selected_proj_path=$(find "$PROJECTS_BASE_DIR" -mindepth 1 -maxdepth 1 -type d | fzf --height 40% --reverse --prompt="Select Project > ")
     fi
@@ -182,9 +187,12 @@ p() {
     # Check if fzf returned successfully and a path was selected
     local fzf_exit_code=$?
     if [ $fzf_exit_code -eq 0 ] && [ -n "$selected_proj_path" ]; then
-         if [ -d "$selected_proj_path" ]; then
+        if [ -d "$selected_proj_path" ]; then
             # Change directory IN THE CURRENT SHELL
-            cd "$selected_proj_path" || { echo "Error changing to directory." >&2; return 1; } 
+            cd "$selected_proj_path" || {
+                echo "Error changing to directory." >&2
+                return 1
+            }
             echo "Changed to: $(pwd)"
 
             # Activate venv if present
@@ -192,31 +200,31 @@ p() {
                 echo "Activating Python virtual environment (.venv)..."
                 source .venv/bin/activate
             elif [ -f "venv/bin/activate" ]; then
-                 echo "Activating Python virtual environment (venv)..."
-                 source venv/bin/activate
+                echo "Activating Python virtual environment (venv)..."
+                source venv/bin/activate
             fi
 
             # Open Neovim
-            if command -v nvim &> /dev/null; then
+            if command -v nvim &>/dev/null; then
                 echo "Opening nvim..."
                 nvim
             else
-                 echo "nvim command not found." >&2
-                 return 0 
+                echo "nvim command not found." >&2
+                return 0
             fi
         else
-             echo "Invalid selection." >&2
-             return 1
+            echo "Invalid selection." >&2
+            return 1
         fi
     elif [ $fzf_exit_code -eq 130 ]; then
-         echo "No project selected." # User cancelled
-         return 0 
+        echo "No project selected." # User cancelled
+        return 0
     else
-         echo "Fzf selection error or no projects found." >&2
-         return 1
+        echo "Fzf selection error or no projects found." >&2
+        return 1
     fi
 }
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"                   # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion
