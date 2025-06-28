@@ -1,0 +1,89 @@
+# This script contains shareable functions and logic for the welcome message.
+# It will look for private settings in ~/.config/bash-personal/config
+
+# --- Configuration with Private Overrides ---
+# Define safe, shareable defaults
+FIGLET_TEXT="Welcome"
+LOCATION="" # Default to empty, allowing for IP-based lookup
+
+# Define the path to the private configuration file
+PRIVATE_CONFIG_FILE="$HOME/.config/bash-personal/config"
+
+# If the private file exists, source it to override the defaults
+if [ -f "$PRIVATE_CONFIG_FILE" ]; then
+    source "$PRIVATE_CONFIG_FILE"
+fi
+
+# --- Custom Welcome Message Logic ---
+echo "" # Start with a blank line
+
+# Dependencies Check
+FIGLET_CMD=$(command -v figlet)
+CURL_CMD=$(command -v curl)
+
+# 1. Display ASCII Art Banner (uses FIGLET_TEXT variable)
+if [ -x "$FIGLET_CMD" ]; then
+    $FIGLET_CMD "$FIGLET_TEXT"
+else
+    echo "============================="
+    echo "       $FIGLET_TEXT"
+    echo "============================="
+fi
+echo ""
+
+# 2. Display Time-Based Greeting
+CURRENT_HOUR=$(date +%H)
+USERNAME=$(whoami)
+GREETING="Good evening"
+if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
+    GREETING="Good morning"
+elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
+    GREETING="Good afternoon"
+fi
+echo "$GREETING, $USERNAME!"
+echo ""
+
+# 3. Display Weather (uses LOCATION variable)
+echo "* Weather Info:"
+if [ -x "$CURL_CMD" ]; then
+    weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
+    if [ $? -eq 0 ] && [ -n "$weather" ]; then
+        echo "  $weather"
+    else
+        echo "  (Could not retrieve weather. Set LOCATION in $PRIVATE_CONFIG_FILE)"
+    fi
+else
+    echo "  (Install 'curl' to enable weather)"
+fi
+echo ""
+
+# Function to cd into a project dir selected via fzf, activate venv, and open nvim
+p() {
+    # Define the base directory where your projects are stored
+    local PROJECTS_BASE_DIR="$HOME/projects"
+    local selected_proj_path
+
+    if ! command -v fzf &>/dev/null; then echo "Error: fzf not found." >&2; return 1; fi
+    if [ ! -d "$PROJECTS_BASE_DIR" ]; then echo "Error: Project directory '$PROJECTS_BASE_DIR' not found." >&2; return 1; fi
+
+    if command -v fd &>/dev/null; then
+        selected_proj_path=$(fd . "$PROJECTS_BASE_DIR" --type d --max-depth 1 | fzf --height 40% --reverse --prompt="Select Project > ")
+    else
+        selected_proj_path=$(find "$PROJECTS_BASE_DIR" -mindepth 1 -maxdepth 1 -type d | fzf --height 40% --reverse --prompt="Select Project > ")
+    fi
+
+    if [ $? -eq 0 ] && [ -n "$selected_proj_path" ]; then
+        cd "$selected_proj_path" || return
+        echo "Changed to: $(pwd)"
+        if [ -f ".venv/bin/activate" ]; then
+            echo "Activating Python virtual environment (.venv)..."
+            source .venv/bin/activate
+        fi
+        if command -v nvim &>/dev/null; then
+            echo "Opening nvim..."
+            nvim
+        fi
+    else
+        echo "No project selected."
+    fi
+}

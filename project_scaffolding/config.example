@@ -1,0 +1,7 @@
+# Configuration file for the project_scaffolding scripts.
+# To use, copy to ~/.config/project_scaffolding/config and edit the path.
+
+# Sets the base directory where new projects will be created.
+# Example: PROJECTS_BASE_DIR="$HOME/code"
+
+PROJECTS_BASE_DIR="$HOME/projects"

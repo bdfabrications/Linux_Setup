@@ -1,0 +1,9 @@
+# Configuration file for the backup_dir script.
+#
+# To use this, copy it to ~/.config/backup_system/config and edit the path.
+
+# Set your preferred default destination for .tar.gz backups.
+# Make sure the path does NOT end with a slash.
+# Example: BACKUP_DEST_DIR="/mnt/external_drive/my_archives"
+
+BACKUP_DEST_DIR="$HOME/backups"

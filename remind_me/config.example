@@ -1,0 +1,11 @@
+# Configuration for the remind_me script.
+# Copy this file to ~/.config/remind_me/config and fill in your details.
+
+# Your API v3 key from Brevo
+API_KEY="your-brevo-api-key"
+
+# The email address you have verified with Brevo
+SENDER_EMAIL="your-verified-email@example.com"
+
+# The name you want the reminder emails to come from
+SENDER_NAME="Reminder Service"
