@@ -18,7 +18,7 @@ alias l='ls -CF'
 
 # --- Custom Aliases ---
 # Alias for running the system update script with sudo
-alias update-sys='sudo $HOME/bin/update_system.sh' 
+alias update-sys='sudo $HOME/bin/update_system.sh'
 # Aliases for other custom scripts in ~/bin
 alias newpy='$HOME/bin/new_pyproject.sh'
 alias newweb='$HOME/bin/new_webproject.sh'
@@ -27,4 +27,5 @@ alias rgf='$HOME/bin/rgf.sh'
 alias serveh='$HOME/bin/serve_here.sh'
 alias ochat='$HOME/bin/ollama_chat.sh'
 alias syncd='$HOME/bin/sync_backup.sh'
+alias remindMe= '$HOME/bin/remind_me.sh'
 # --- End Custom Aliases ---

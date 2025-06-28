@@ -83,7 +83,7 @@ export PATH
 echo "" # Start with a blank line
 
 # Configuration for Welcome Message
-LOCATION=""             # Set default, remind user to change if needed
+LOCATION="78070"        # Set default, remind user to change if needed
 FIGLET_TEXT="o7 Tester" # Text for the figlet banner
 
 # Dependencies Check for Welcome Message
@@ -135,6 +135,7 @@ echo ""
 echo "Available custom commands:"
 echo ""
 echo "  update-sys    - Update system packages (needs sudo password)"
+echo "  remindMe      - Set a future email/desktop notification reminder"
 echo "  newweb <Name> - Create basic HTML/CSS/JS project structure (incl. Git)"
 echo "  newpy <Name>  - Create Python project structure (incl. Git, .venv, .gitignore)"
 echo "  p             - Select project (in ~/projects), cd, activate venv (if found), open nvim"
