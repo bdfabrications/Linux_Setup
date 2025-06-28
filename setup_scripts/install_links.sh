@@ -34,9 +34,9 @@ ln -sfn "$REPO_DIR/system_manager/update_system.sh" "$TARGET_BIN_DIR/update_syst
 ln -sfn "$REPO_DIR/project_scaffolding/new_pyproject.sh" "$TARGET_BIN_DIR/new_pyproject"
 ln -sfn "$REPO_DIR/project_scaffolding/new_webproject.sh" "$TARGET_BIN_DIR/new_webproject"
 # shell_helpers project
-ln -sfn "$REPO_DIR/shell_helpers/rgf.sh" "$TARGET_BIN_DIR/rgf"
-ln -sfn "$REPO_DIR/shell_helpers/serve_here.sh" "$TARGET_BIN_DIR/serve_here"
-ln -sfn "$REPO_DIR/shell_helpers/ollama_chat.sh" "$TARGET_BIN_DIR/ollama_chat"
+ln -sfn "$REPO_DIR/shell_helpers/rgf_helper/rgf.sh" "$TARGET_BIN_DIR/rgf"
+ln -sfn "$REPO_DIR/shell_helpers/simple_server/serve_here.sh" "$TARGET_BIN_DIR/serve_here"
+ln -sfn "$REPO_DIR/shell_helpers/ollama_chat/ollama_chat.sh" "$TARGET_BIN_DIR/ollama_chat"
 
 # --- Link Shell Configs ---
 echo "Linking shell configuration..."

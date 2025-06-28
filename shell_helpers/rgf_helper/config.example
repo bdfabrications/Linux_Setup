@@ -1,0 +1,9 @@
+# Configuration file for the rgf_helper script.
+# To use, copy to ~/.config/rgf_helper/config and edit the options.
+
+# Set your preferred default options for ripgrep (rg).
+# -i for case-insensitive, -n for line number, -l to list files with matches
+# Example for case-sensitive search listing only files:
+# RG_DEFAULT_OPTS="--files-with-matches"
+
+RG_DEFAULT_OPTS="--heading --line-number --ignore-case --color=always"

@@ -1,0 +1,7 @@
+# Configuration file for the serve_here script.
+# To use, copy to ~/.config/simple_server/config and edit the port.
+
+# Sets the default port to use when no port is specified on the command line.
+# Example: DEFAULT_PORT=9000
+
+DEFAULT_PORT=8000
