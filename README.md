@@ -6,9 +6,9 @@ The entire setup is designed to be modular, portable, and easily deployed on a n
 
 ## Core Philosophy
 
--   **Modular:** Every script and configuration is organized into its own self-contained project directory with its own documentation.
--   **Configurable:** Scripts with user-specific settings (like API keys or default paths) read their values from private configuration files located in `~/.config/`. This keeps personal secrets completely separate from this public repository.
--   **Automated:** The primary goal is to bootstrap a new machine from zero to fully configured with a single command.
+- **Modular:** Every script and configuration is organized into its own self-contained project directory with its own documentation.
+- **Configurable:** Scripts with user-specific settings (like API keys or default paths) read their values from private configuration files located in `~/.config/`. This keeps personal secrets completely separate from this public repository.
+- **Automated:** The primary goal is to bootstrap a new machine from zero to fully configured with a single command.
 
 ---
 
@@ -19,15 +19,15 @@ These setup scripts are designed to be run **once** on a new system to install a
 > **Warning:** These scripts will install numerous packages and require `sudo` privileges. Review their contents before running on a critical system.
 
 ### 1. Clone the Repository
+
 ```bash
 git clone [https://github.com/bdfabrications/my_linux_setup.git](https://github.com/bdfabrications/my_linux_setup.git)
 cd my_linux_setup
 
 2. Run the Appropriate Installer
 
-For Native Linux (Debian, Ubuntu, Fedora, Arch)
-
-This script will detect your distribution and install everything needed.
+For Native Linux (Specifically APT based distributions)
+This script is optimized for a fresh Debian/Ubuntu instance.
 Bash
 
 chmod +x setup_scripts/setup_linux.sh
@@ -93,3 +93,4 @@ Most projects that require user-specific settings follow a simple pattern:
 
 
 ---
+```

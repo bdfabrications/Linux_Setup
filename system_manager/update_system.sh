@@ -1,6 +1,6 @@
 #!/bin/bash
 # Simple script to update the system, upgrade packages, and clean up.
-# Version 2.0: Help text moved to README.md
+# Version 2.1: Improved logging, error handling, and modularization
 
 # --- Help Function ---
 show_help() {
@@ -16,54 +16,69 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
 fi
 
 # --- Sudo Check ---
-SUDO_CMD=""
-if [[ $EUID -ne 0 ]]; then
-    if command -v sudo &>/dev/null; then
-        SUDO_CMD="sudo"
-        echo "[Info] Not root. Using 'sudo' for package operations."
-    else
-        echo "[Error] This script must be run as root or with sudo." >&2
-        exit 1
+check_sudo() {
+    if [[ $EUID -ne 0 ]]; then
+        if command -v sudo &>/dev/null; then
+            echo "[Info] Not root. Using 'sudo' for package operations."
+            SUDO_CMD="sudo"
+        else
+            echo "[Error] This script must be run as root or with sudo." >&2
+            exit 1
+        fi
     fi
-fi
+}
 
-echo "--- Starting System Update & Cleanup ---"
+# --- Update Package Lists ---
+update_package_lists() {
+    echo "[Info] [1/4] Updating package lists..."
+    if ! $SUDO_CMD apt update; then
+        echo "[Error] 'apt update' failed. Exiting." >&2
+        exit 1
+    else
+        echo "[Success] Package lists updated successfully."
+    fi
+}
 
-# 1. Update package lists
-echo "[1/4] Updating package lists..."
-if ! $SUDO_CMD apt update; then
-    echo "Error: 'apt update' failed. Exiting." >&2
-    exit 1
-fi
-echo "Package lists updated successfully."
-echo ""
+# --- Upgrade Installed Packages ---
+upgrade_packages() {
+    echo "[Info] [2/4] Upgrading installed packages..."
+    if ! $SUDO_CMD apt upgrade -y; then
+        echo "[Warning] 'apt upgrade' encountered issues, but continuing cleanup." >&2
+    else
+        echo "[Success] Packages upgraded successfully."
+    fi
+}
 
-# 2. Upgrade installed packages
-echo "[2/4] Upgrading installed packages..."
-if ! $SUDO_CMD apt upgrade -y; then
-    echo "[Warning] 'apt upgrade' encountered issues, but continuing cleanup." >&2
-else
-    echo "Packages upgraded successfully."
-fi
-echo ""
+# --- Remove Unused Dependencies ---
+remove_unused_packages() {
+    echo "[Info] [3/4] Removing unused packages..."
+    if ! $SUDO_CMD apt autoremove -y; then
+        echo "[Warning] 'apt autoremove' encountered issues." >&2
+    else
+        echo "[Success] Unused packages removed successfully."
+    fi
+}
 
-# 3. Remove unused dependencies
-echo "[3/4] Removing unused packages..."
-if ! $SUDO_CMD apt autoremove -y; then
-    echo "[Warning] 'apt autoremove' encountered issues." >&2
-else
-    echo "Unused packages removed successfully."
-fi
-echo ""
+# --- Clean Up Package Cache ---
+clean_package_cache() {
+    echo "[Info] [4/4] Cleaning up downloaded package cache..."
+    if ! $SUDO_CMD apt clean; then
+        echo "[Warning] 'apt clean' encountered issues." >&2
+    else
+        echo "[Success] Package cache cleaned successfully."
+    fi
+}
 
-# 4. Clean up package cache
-echo "[4/4] Cleaning up downloaded package cache..."
-if ! $SUDO_CMD apt clean; then
-    echo "[Warning] 'apt clean' encountered issues." >&2
-else
-    echo "Package cache cleaned successfully."
-fi
-echo ""
+# --- Main Function ---
+main() {
+    check_sudo
+    echo "--- Starting System Update & Cleanup ---"
+    update_package_lists
+    upgrade_packages
+    remove_unused_packages
+    clean_package_cache
+    echo "--- System Update & Cleanup Finished ---"
+    exit 0
+}
 
-echo "--- System Update & Cleanup Finished ---"
-exit 0
+main
