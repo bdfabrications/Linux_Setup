@@ -1,96 +1,61 @@
 #!/bin/bash
-# Setup script for WSL (Ubuntu/Debian-based) environments.
+# Master setup script for WSL (Ubuntu/Debian-based) environments.
+# This script acts as an orchestrator, installing core dependencies
+# and then running all modular installation routines.
 
 set -e
-echo "--- Starting WSL Development Environment Setup ---"
-
-# --- Helper Functions ---
-command_exists() { command -v "$1" >/dev/null 2>&1; }
+echo "--- Starting Master WSL Environment Setup ---"
 
 # --- Ensure Script is Run from Repo Root ---
-# UPDATED PATH
-if [ ! -f "./setup_scripts/install_links.sh" ]; then
+if [ ! -d "./setup_scripts" ] || [ ! -d "./install_routines" ]; then
 	echo "[Error] Please run this script from the root directory of the repository." >&2
 	exit 1
 fi
 REPO_ROOT_DIR=$(pwd)
-echo "[Info] Running setup from: $REPO_ROOT_DIR"
+INSTALL_ROUTINES_DIR="$REPO_ROOT_DIR/install_routines"
 
-# --- 1. Install System Dependencies ---
-echo "[1/7] Updating and installing dependencies via apt..."
+# --- PHASE 1: Install Core System Dependencies ---
+echo "[PHASE 1] Installing core dependencies via apt..."
 sudo apt update
-sudo apt install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip
-echo "Removing old package manager Neovim..."
-sudo apt remove --purge neovim neovim-runtime -y || true
-if ! command_exists node; then
-	echo "Installing Node.js and npm via NodeSource..."
-	if ! command_exists curl; then sudo apt install -y curl; fi
-	NODE_MAJOR=20
-	curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | sudo -E bash -
-	sudo apt install -y nodejs
-fi
-if command_exists fdfind && ! command_exists fd; then
-	echo "Creating 'fd' symlink..."
+# This list contains tools needed by the installers (curl, wget, tar)
+# and common tools for the base environment (git, python, node, fzf, etc.).
+sudo apt install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm
+
+# Create 'fd' symlink needed on Debian-based systems
+if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
+	echo "Creating 'fd' symlink for 'fdfind'..."
 	sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
 fi
-echo "System dependencies installed." && echo ""
+echo "Core dependencies installed."
+echo ""
 
-# --- 2. Install Oh My Posh ---
-echo "[2/7] Installing Oh My Posh..."
-if ! command_exists oh-my-posh; then
-	ARCH=$(uname -m)
-	if [[ "$ARCH" == "x86_64" ]]; then POSH_ARCH="amd64"; elif [[ "$ARCH" == "aarch64" ]]; then POSH_ARCH="arm64"; else
-		echo "[Error] Unsupported arch: $ARCH" >&2
-		exit 1
+# --- PHASE 2: Run Individual Software Installers ---
+echo "[PHASE 2] Executing all installation routines from $INSTALL_ROUTINES_DIR..."
+for installer in "$INSTALL_ROUTINES_DIR"/*.sh; do
+	if [ -f "$installer" ]; then
+		echo ""
+		echo "--- Running installer: $(basename "$installer") ---"
+		bash "$installer"
 	fi
-	sudo curl -fLo /usr/local/bin/oh-my-posh "https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-${POSH_ARCH}"
-	sudo chmod +x /usr/local/bin/oh-my-posh
-fi
-echo "Oh My Posh version: $(oh-my-posh --version)" && echo ""
+done
+echo "All installation routines completed."
+echo ""
 
-# --- 3. Install Neovim v0.11.0 ---
-echo "[3/7] Installing Neovim v0.11.0..."
-NVIM_VERSION="v0.11.0"
-if ! (command_exists nvim && [[ "$(nvim --version | head -n 1)" == *"${NVIM_VERSION#v}"* ]]); then
-	ARCH=$(uname -m)
-	if [[ "$ARCH" == "x86_64" ]]; then NVIM_FILENAME_ARCH="linux-x86_64"; elif [[ "$ARCH" == "aarch64" ]]; then NVIM_FILENAME_ARCH="linux-aarch64"; else
-		echo "[Error] Unsupported arch: $ARCH" >&2
-		exit 1
-	fi
-	NVIM_TARBALL="nvim-${NVIM_FILENAME_ARCH}.tar.gz"
-	NVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${NVIM_TARBALL}"
-	echo "Downloading Neovim..."
-	curl -fLo "${NVIM_TARBALL}" "${NVIM_DOWNLOAD_URL}"
-	echo "Extracting Neovim..."
-	sudo tar xzf "${NVIM_TARBALL}" -C /usr/local/
-	sudo ln -sf "/usr/local/nvim-${NVIM_FILENAME_ARCH}/bin/nvim" /usr/local/bin/nvim
-	rm -f "${NVIM_TARBALL}"
-fi
-echo "Neovim version: $(nvim --version | head -n 1)" && echo ""
-
-# --- 4. Install Ollama ---
-echo "[4/7] Installing Ollama..."
-if ! command_exists ollama; then
-	curl -fsSL https://ollama.com/install.sh | sh
-fi
-echo "Ollama installed." && echo ""
-
-# --- 5. Link Dotfiles ---
-echo "[5/7] Linking dotfiles..."
-# UPDATED PATH
+# --- PHASE 3: Link All Configurations ---
+echo "[PHASE 3] Linking all dotfiles and configurations..."
 bash "$REPO_ROOT_DIR/setup_scripts/install_links.sh"
-echo "Dotfiles linked." && echo ""
+echo "Dotfiles linked."
+echo ""
 
-# --- 6. Setup Neovim Plugins ---
-echo "[6/7] Setting up Neovim plugins (Lazy sync)..."
-nvim --headless "+Lazy! sync" +qa || echo "[Warning] Lazy sync failed. Run ':Lazy sync' in nvim."
-echo "Lazy sync complete." && echo ""
-
-# --- 7. Install Mason Tools ---
-echo "[7/7] Installing Neovim Mason tools..."
-nvim --headless "+MasonInstallAll" +qa || echo "[Warning] MasonInstallAll failed. Run ':Mason' in nvim."
-echo "Mason tool installation complete." && echo ""
+# --- PHASE 4: Finalize Neovim Setup ---
+echo "[PHASE 4] Running final Neovim bootstrapping..."
+bash "$REPO_ROOT_DIR/setup_scripts/finalize_neovim.sh"
+echo "Neovim finalization complete."
+echo ""
 
 # --- Finish ---
-echo "✅ WSL Setup Complete! Please RESTART YOUR WSL SESSION."
+echo "-------------------------------------------------"
+echo "✅ Master WSL Setup Complete!"
+echo "Please RESTART YOUR WSL TERMINAL for all changes to take effect."
+echo "-------------------------------------------------"
 exit 0
