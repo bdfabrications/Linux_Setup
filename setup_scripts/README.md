@@ -1,65 +1,29 @@
 Setup Scripts
 
 This directory contains the core installation and deployment scripts for the entire my_linux_setup environment. These scripts are designed to automate the setup of a new machine.
+setup_linux.sh & setup_wsl.sh - Full Setup
 
-setup_linux.sh - Full Setup for Native Linux
+When to Use: Use these scripts ONCE on a fresh system to bootstrap your entire environment. They perform the following actions in order:
 
-When to Use: Use this script ONCE on a fresh, new native Linux installation (Debian, Ubuntu, Fedora, or Arch-based) to bootstrap your entire development environment from scratch.
+    Detect your Linux distribution.
 
-What It Does:
+    Install all necessary system packages and dependencies using install_routines. This includes Neovim, Docker, Oh My Posh, etc.
 
-    Detects your Linux distribution.
+    Run install_configs.sh to automatically set up all necessary user configuration directories and templates in ~/.config/.
 
-    Installs all necessary system packages and dependencies (git, curl, python, fzf, etc.) using the appropriate package manager.
+    Run install_links.sh to deploy all your personal configurations and scripts by creating symbolic links.
 
-    Installs specific versions of key tools like Neovim (from source), Oh My Posh, and Node.js to ensure consistency across machines.
+    Run finalize_neovim.sh to bootstrap AstroNvim plugins and tools.
 
-    Installs Ollama for local AI models.
+install_configs.sh - Setup User Configs
 
-    Calls install_links.sh to deploy all your personal configurations.
-
-    Bootstraps Neovim by installing all plugins via Lazy.nvim.
-
-How to Run:
-
-# 1. Clone the repository
-
-# git clone https://github.com/bdfabrications/my_linux_setup.git
-
-cd my_linux_setup
-
-# 2. Make the script executable
-
-chmod +x setup_scripts/setup_linux.sh
-
-# 3. Run the setup
-
-./setup_scripts/setup_linux.sh
-
-    Warning: This script will install numerous packages and requires sudo privileges. Review its contents before running on a critical system.
-
-setup_wsl.sh - Full Setup for WSL
-
-When to Use: Use this script ONCE on a fresh WSL (Windows Subsystem for Linux) instance, specifically one based on Debian or Ubuntu.
-
-What It Does:
-This script is nearly identical to setup_linux.sh but is optimized specifically for a WSL environment. It performs all the same steps: dependency installation, tool setup, dotfile linking, and Neovim bootstrapping.
-
-How to Run:
-The process is the same as the native Linux script. From within the cloned repository root:
-Bash
-
-chmod +x setup_scripts/setup_wsl.sh
-./setup_scripts/setup_wsl.sh
-
+When to Use: This script is called automatically by the main setup scripts. It can also be run manually if you ever need to restore the default configuration templates.
+What It Does: It iterates through all the projects in the repository, checks for config.example files, and copies them to the correct location in ~/.config/ if a user configuration doesn't already exist.
 install_links.sh - Link Configurations
 
-When to Use: Use this script on a machine where you have already installed all the dependencies manually, or after you have pulled changes from Git and want to simply update your configuration links. This script is the "heart" of the setup and is called automatically by the other two scripts.
+When to Use: This script is called automatically by the main setup scripts. You can run it manually after pulling changes from Git to ensure all your symbolic links are up-to-date.
+What It Does: This script is the "heart" of the setup. Its only job is to create symbolic links from the files and scripts in this repository to the correct locations in your home directory (e.g., ~/.bashrc_config, ~/.config/nvim, ~/bin/).
+finalize_neovim.sh - Bootstrap Neovim
 
-What It Does:
-This script's only job is to create symbolic links from the configuration files and scripts in this repository to the correct locations in your home directory (e.g., ~/.bashrc_config, ~/.config/nvim, ~/bin/).
-
-How to Run:
-
-chmod +x setup_scripts/install_links.sh
-./setup_scripts/install_links.sh
+When to Use: Called automatically by the main setup scripts.
+What It Does: Runs the final bootstrapping commands for Neovim (:Lazy sync, :MasonInstallAll) to ensure all plugins and language servers are installed and ready.

@@ -1,0 +1,24 @@
+# IDE and editor specific files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Python virtual environments and cache
+.venv/
+venv/
+__pycache__/
+
+# Node.js dependencies
+node_modules/
+
+# Compiled files
+build/
+dist/
+*.egg-info/
+
+# Local secrets - never commit these!
+.env
+.env.*
+!*.env.example

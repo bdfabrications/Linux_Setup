@@ -29,3 +29,6 @@ alias ochat='$HOME/bin/ollama_chat'
 alias syncd='$HOME/bin/sync_backup'
 alias remindMe='$HOME/bin/remind_me'
 # --- End Custom Aliases ---
+
+# modernvim alias definition
+alias modernvim='XDG_CONFIG_HOME="/home/crustysamwich/modern-nvim/config" XDG_DATA_HOME="/home/crustysamwich/modern-nvim/data" "/home/crustysamwich/modern-nvim/nvim.appimage"'

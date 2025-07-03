@@ -46,7 +46,7 @@ ln -sfn "$REPO_DIR/shell_config/bashrc_config" "$HOME/.bashrc_config"
 # --- Link Neovim Config ---
 echo "Linking Neovim configuration..."
 # This command directly creates the symlink without making a directory first.
-ln -sfn "$REPO_DIR/nvim_config" "$HOME/.config/nvim"
+ln -sfn "$REPO_DIR/astronvim" "$HOME/.config/nvim"
 
 # --- Link Shell Theming ---
 echo "Linking Oh My Posh themes..."
