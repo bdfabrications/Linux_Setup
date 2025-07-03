@@ -1,34 +1,33 @@
 # ~/.bash_aliases
 # This file is sourced by ~/.bashrc
 
-# Enable color support of ls and also add handy aliases
-# Check if needed - ls should already have color enabled by default in most modern setups
-# if [ -x /usr/bin/dircolors ]; then
-#     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-#     alias ls='ls --color=auto'
-#     alias grep='grep --color=auto'
-#     alias fgrep='fgrep --color=auto'
-#     alias egrep='egrep --color=auto'
-# fi
+# --- eza aliases (modern ls replacement) ---
+# Added --color=always to force color output and resolve shell conflicts.
+alias ls='eza --color=always --icons'
+alias la='eza --color=always -a --icons' # show all files
+alias ll='eza --color=always -l --icons --git' # long format with git status
+alias llt='eza --color=always -lT --icons --git' # long format as a tree
 
-# Preferred ls aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
+# --- Custom Script Aliases ---
+# Rely on scripts being in the PATH (via ~/bin) instead of hardcoding the path.
 
-# --- Custom Aliases ---
-# Alias for running the system update script with sudo
-alias update-sys='sudo $HOME/bin/update_system'
-# Aliases for other custom scripts in ~/bin
-alias newpy='$HOME/bin/new_pyproject'
-alias newweb='$HOME/bin/new_webproject'
-alias backupd='$HOME/bin/backup_dir'
-alias rgf='$HOME/bin/rgf'
-alias serveh='$HOME/bin/serve_here'
-alias ochat='$HOME/bin/ollama_chat'
-alias syncd='$HOME/bin/sync_backup'
-alias remindMe='$HOME/bin/remind_me'
+# System & Project Management
+alias update-sys='sudo update_system'
+alias newpy='new_pyproject'
+alias newweb='new_webproject'
+
+# Backups
+alias backupd='backup_dir'
+alias syncd='sync_backup'
+
+# Helpers
+alias rgf='rgf'
+alias serveh='serve_here'
+alias ochat='ollama_chat'
+alias remindme='remind_me'
+
 # --- End Custom Aliases ---
 
 # modernvim alias definition
+# This is correctly defined for a self-contained AppImage with a custom configuration.
 alias modernvim='XDG_CONFIG_HOME="/home/crustysamwich/modern-nvim/config" XDG_DATA_HOME="/home/crustysamwich/modern-nvim/data" "/home/crustysamwich/modern-nvim/nvim.appimage"'

@@ -9,9 +9,12 @@ LOCATION="" # Default to empty, allowing for IP-based lookup
 # Define the path to the private configuration file
 PRIVATE_CONFIG_FILE="$HOME/.config/bash-personal/config"
 
-# If the private file exists, source it to override the defaults
+# If the private file exists, source it to override the defaults.
+# The 'if' block should only contain the 'source' command.
 if [ -f "$PRIVATE_CONFIG_FILE" ]; then
     source "$PRIVATE_CONFIG_FILE"
+fi # --- CORRECTED: The 'if' block now ends here. ---
+
 #
 # my_help: An interactive command palette using fzf.
 #
@@ -26,7 +29,7 @@ my_help() {
     # This list is then piped into fzf for interactive searching.
     cat <<EOF | fzf --height 50% --reverse --border=rounded --header="Fuzzy Find Your Custom Commands"
 # --- System & Setup ---
-update_system         - Update all system packages (Debian/APT).
+update_system           - Update all system packages (Debian/APT).
 install_links       - Re-links all configurations from the repository.
 
 # --- Project Management ---
@@ -45,50 +48,6 @@ serve_here [port]     - Start a simple web server in the current directory.
 rgf <pattern> [path]  - Interactively search for a text pattern with ripgrep.
 EOF
 }
-fi
-
-# --- Custom Welcome Message Logic ---
-echo "" # Start with a blank line
-
-# Dependencies Check
-FIGLET_CMD=$(command -v figlet)
-CURL_CMD=$(command -v curl)
-
-# 1. Display ASCII Art Banner (uses FIGLET_TEXT variable)
-if [ -x "$FIGLET_CMD" ]; then
-    $FIGLET_CMD "$FIGLET_TEXT"
-else
-    echo "============================="
-    echo "       $FIGLET_TEXT"
-    echo "============================="
-fi
-echo ""
-
-# 2. Display Time-Based Greeting
-CURRENT_HOUR=$(date +%H)
-USERNAME=$(whoami)
-GREETING="Good evening"
-if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
-    GREETING="Good morning"
-elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
-    GREETING="Good afternoon"
-fi
-echo "$GREETING, $USERNAME!"
-echo ""
-
-# 3. Display Weather (uses LOCATION variable)
-echo "* Weather Info:"
-if [ -x "$CURL_CMD" ]; then
-    weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
-    if [ $? -eq 0 ] && [ -n "$weather" ]; then
-        echo "  $weather"
-    else
-        echo "  (Could not retrieve weather. Set LOCATION in $PRIVATE_CONFIG_FILE)"
-    fi
-else
-    echo "  (Install 'curl' to enable weather)"
-fi
-echo ""
 
 # Function to cd into a project dir selected via fzf, activate venv, and open nvim
 p() {
@@ -121,17 +80,56 @@ p() {
     fi
 }
 
+# --- Custom Welcome Message Logic ---
+echo "" # Start with a blank line
+
+# Dependencies Check
+FIGLET_CMD=$(command -v figlet)
+CURL_CMD=$(command -v curl)
+
+# 1. Display ASCII Art Banner (uses FIGLET_TEXT variable)
+if [ -x "$FIGLET_CMD" ]; then
+    $FIGLET_CMD "$FIGLET_TEXT"
+else
+    echo "============================="
+    echo "        $FIGLET_TEXT"
+    echo "============================="
+fi
+echo ""
+
+# 2. Display Time-Based Greeting
+CURRENT_HOUR=$(date +%H)
+USERNAME=$(whoami)
+GREETING="Good evening"
+if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
+    GREETING="Good morning"
+elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
+    GREETING="Good afternoon"
+fi
+echo "$GREETING, $USERNAME!"
+echo ""
+
+# 3. Display Weather (uses LOCATION variable)
+echo "* Weather Info:"
+if [ -x "$CURL_CMD" ]; then
+    weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
+    if [ $? -eq 0 ] && [ -n "$weather" ]; then
+        echo "  $weather"
+    else
+        echo "  (Could not retrieve weather. Set LOCATION in $PRIVATE_CONFIG_FILE)"
+    fi
+else
+    echo "  (Install 'curl' to enable weather)"
+fi
+echo ""
+
 # --- Handy Command Reference ---
 # This message is displayed each time a new terminal opens.
-
 echo "---"
 echo "Quick Command Reference:"
-echo "  update_system      - Update all system packages."
-echo "  remind_me          - Set a future reminder."
-echo "  backup_dir <dir>   - Create a .tar.gz backup of a directory."
-echo "  sync_backup <src> <dest> - Mirror a directory with rsync."
-echo "  p                  - Interactively select a project to open."
-echo ""
-echo "For a full list of all custom projects and detailed help,"
-echo "run the command: my_help"
+echo "  p                     - Interactively select a project to open."
+echo "  my_help               - Fuzzy find all custom commands."
 echo "---"
+
+# --- zoxide hook ---
+eval "$(zoxide init bash)"

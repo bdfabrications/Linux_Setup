@@ -25,14 +25,19 @@ echo "[PHASE 2] Executing all installation routines from $INSTALL_ROUTINES_DIR..
 # NOTE: We now explicitly call the AstroNvim installer AFTER the main Neovim installer.
 bash "$INSTALL_ROUTINES_DIR/10_oh_my_posh.sh"
 bash "$INSTALL_ROUTINES_DIR/20_neovim.sh"
-bash "$INSTALL_ROUTINES_DIR/25_astronvim.sh" # <-- NEW
+bash "$INSTALL_ROUTINES_DIR/25_astronvim.sh"
 bash "$INSTALL_ROUTINES_DIR/30_ollama.sh"
 bash "$INSTALL_ROUTINES_DIR/40_docker.sh"
+# --- NEW: Add new installers ---
+bash "$INSTALL_ROUTINES_DIR/50_pre-commit.sh"
+bash "$INSTALL_ROUTINES_DIR/60_just.sh"
+bash "$INSTALL_ROUTINES_DIR/70_terminal_enhancements.sh"
+bash "$INSTALL_ROUTINES_DIR/80_1password_cli.sh"
 echo "All installation routines completed."
 echo ""
 
 # --- PHASE 3: Set up User Config Files ---
-echo "[PHASE 3] Setting up user configuration files..." # <-- NEW
+echo "[PHASE 3] Setting up user configuration files..."
 bash "$REPO_ROOT_DIR/setup_scripts/install_configs.sh"
 echo "User configurations set up."
 echo ""
@@ -44,7 +49,7 @@ echo "Dotfiles linked."
 echo ""
 
 # --- PHASE 5: Finalize Neovim Setup ---
-echo "[PHASE 5] Running final Neovim bootstrapping..." # <-- MODIFIED
+echo "[PHASE 5] Running final Neovim bootstrapping..."
 # We still run this to install Mason tools and sync plugins for AstroNvim
 bash "$REPO_ROOT_DIR/setup_scripts/finalize_neovim.sh"
 echo "Neovim finalization complete."

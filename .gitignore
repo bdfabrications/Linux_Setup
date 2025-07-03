@@ -22,3 +22,6 @@ dist/
 .env
 .env.*
 !*.env.example
+
+# --- NEW: Dev Container files ---
+.devcontainer/
