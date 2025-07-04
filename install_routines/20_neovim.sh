@@ -1,6 +1,6 @@
 #!/bin/bash
 # install_routines/20_neovim.sh
-# Installs the LATEST STABLE version of Neovim by dynamically finding the download URL.
+# Installs the LATEST STABLE version of Neovim by finding the correct release.
 
 set -e
 echo "Starting Neovim installation..."
@@ -21,17 +21,18 @@ fi
 # --- Installation ---
 if command -v nvim &>/dev/null; then
     echo "Neovim already appears to be installed."
-    echo "Current version: $(nvim --version | head -n 1)"
     exit 0
 fi
 
-# --- Dynamically find the AppImage download URL from the GitHub API ---
-echo "Finding latest stable Neovim AppImage release from GitHub API..."
-API_URL="https://api.github.com/repos/neovim/neovim/releases/latest"
-NVIM_DOWNLOAD_URL=$(curl -s $API_URL | jq -r '.assets[] | select(.name == "nvim.appimage") | .browser_download_url')
+# --- Dynamically find the correct AppImage download URL ---
+API_URL="https://api.github.com/repos/neovim/neovim/releases"
 
-if [ -z "$NVIM_DOWNLOAD_URL" ]; then
-    echo "[Error] Could not find the nvim.appimage download URL from the GitHub API." >&2
+echo "Finding latest stable Neovim AppImage release from GitHub API..."
+# This command finds the first release that is NOT a pre-release and has the nvim.appimage asset
+NVIM_DOWNLOAD_URL=$(curl -s $API_URL | jq -r '[.[] | select(.prerelease==false) | .assets[] | select(.name=="nvim.appimage") | .browser_download_url] | .[0]')
+
+if [ -z "$NVIM_DOWNLOAD_URL" ] || [ "$NVIM_DOWNLOAD_URL" == "null" ]; then
+    echo "[Error] Could not find a stable nvim.appimage download URL from the GitHub API." >&2
     exit 1
 fi
 
@@ -42,7 +43,7 @@ NVIM_APPIMAGE="nvim.appimage"
 
 echo "Downloading latest stable Neovim AppImage..."
 if ! curl -fLo "/tmp/${NVIM_APPIMAGE}" "${NVIM_DOWNLOAD_URL}"; then
-    echo "[Error] Failed to download Neovim AppImage. Please check the URL or your network connection." >&2
+    echo "[Error] Failed to download Neovim AppImage." >&2
     exit 1
 fi
 
