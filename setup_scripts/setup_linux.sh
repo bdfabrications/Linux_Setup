@@ -56,6 +56,15 @@ bash "$REPO_ROOT_DIR/setup_scripts/finalize_neovim.sh"
 echo "Neovim finalization complete."
 echo ""
 
+# --- PHASE 6: Final Configuration Step ---
+echo "[PHASE 6] Final Manual Step Required"
+echo "To complete the setup, please run the following command to link your new shell configuration:"
+echo ""
+echo "  echo 'if [ -f ~/.bashrc_config ]; then . ~/.bashrc_config; fi' >> ~/.bashrc"
+echo ""
+echo "This only needs to be done once."
+echo ""
+
 
 # --- Finish ---
 echo "-------------------------------------------------"
