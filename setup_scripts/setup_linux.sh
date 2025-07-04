@@ -15,7 +15,8 @@ INSTALL_ROUTINES_DIR="$REPO_ROOT_DIR/install_routines"
 # --- PHASE 1: Install Core System Dependencies ---
 echo "[PHASE 1] Installing core dependencies via apt..."
 sudo apt update
-sudo apt install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm
+# --- MODIFIED: Added libfuse2 for AppImage support ---
+sudo apt install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm libfuse2
 # ... (rest of dependency installation) ...
 echo "Core dependencies installed."
 echo ""
