@@ -16,20 +16,15 @@ INSTALL_ROUTINES_DIR="$REPO_ROOT_DIR/install_routines"
 
 # --- PHASE 1: Install Core System Dependencies ---
 echo "[PHASE 1] Installing core dependencies via apt..."
-sudo apt update
-# --- MODIFIED: Added libfuse2 for AppImage support ---
-sudo apt install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm libfuse2
-
-# Create 'fd' symlink needed on Debian-based systems
-if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
-	echo "Creating 'fd' symlink for 'fdfind'..."
-	sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
-fi
+sudo apt-get update
+# libfuse2 is required for AppImage support, which is common in WSL.
+sudo apt-get install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm libfuse2
 echo "Core dependencies installed."
 echo ""
 
 # --- PHASE 2: Run Individual Software Installers ---
 echo "[PHASE 2] Executing all installation routines from $INSTALL_ROUTINES_DIR..."
+# This loop ensures every installer script in the directory is executed.
 for installer in "$INSTALL_ROUTINES_DIR"/*.sh; do
 	if [ -f "$installer" ]; then
 		echo ""
@@ -40,14 +35,21 @@ done
 echo "All installation routines completed."
 echo ""
 
-# --- PHASE 3: Link All Configurations ---
-echo "[PHASE 3] Linking all dotfiles and configurations..."
+# --- PHASE 3: Set up User Config Files ---
+echo "[PHASE 3] Setting up user configuration files..."
+bash "$REPO_ROOT_DIR/setup_scripts/install_configs.sh"
+echo "User configurations set up."
+echo ""
+
+# --- PHASE 4: Link All Configurations & Scripts ---
+echo "[PHASE 4] Linking all dotfiles and configurations..."
+# The install_links.sh script now handles sourcing automatically.
 bash "$REPO_ROOT_DIR/setup_scripts/install_links.sh"
 echo "Dotfiles linked."
 echo ""
 
-# --- PHASE 4: Finalize Neovim Setup ---
-echo "[PHASE 4] Running final Neovim bootstrapping..."
+# --- PHASE 5: Finalize Neovim Setup ---
+echo "[PHASE 5] Running final Neovim bootstrapping..."
 bash "$REPO_ROOT_DIR/setup_scripts/finalize_neovim.sh"
 echo "Neovim finalization complete."
 echo ""
