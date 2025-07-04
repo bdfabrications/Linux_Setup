@@ -17,9 +17,8 @@ INSTALL_ROUTINES_DIR="$REPO_ROOT_DIR/install_routines"
 # --- PHASE 1: Install Core System Dependencies ---
 echo "[PHASE 1] Installing core dependencies via apt..."
 sudo apt update
-# This list contains tools needed by the installers (curl, wget, tar)
-# and common tools for the base environment (git, python, node, fzf, etc.).
-sudo apt install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm
+# --- MODIFIED: Added libfuse2 for AppImage support ---
+sudo apt install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm libfuse2
 
 # Create 'fd' symlink needed on Debian-based systems
 if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
