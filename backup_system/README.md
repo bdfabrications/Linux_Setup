@@ -1,75 +1,95 @@
-# Backup System
+#Backup System
 
-A collection of two scripts for managing file backups on Linux.
+A collection of robust scripts for managing file backups on linux, designed with safety and usability in mind.
 
-1.  **`backup_dir`**: Creates full, timestamped, compressed (`.tar.gz`) archives of a directory. Ideal for point-in-time snapshots and archival.
-2.  **`sync_backup`**: Uses `rsync` to maintain an exact mirror of a directory. Ideal for fast, incremental updates and quick recovery.
+- `backup.dir`: Create `full`, `timestamped`, `compressed` (`tar.gz`) archives of a directory. Ideal for `point in time` snapshots and archival.
+- `sync.dir`: Create `fast`, `incremental` backups of a directory. Ideal for `frequently updated` mirrors.
 
 ---
 
-## `backup_dir` Command
+## backup.dir Command
 
-### Overview
+### Summary
 
-This is a simple but powerful command designed to create a timestamped, compressed (`.tar.gz`) backup of any directory you specify.
+This command creates a `timestamped`, `compressed` (`tar.gz`) backup of any directory you specify. It's perfect for creating a complete snapshot of a project or configuration directory at a specific moment.
 
-Its key feature is the ability to automatically detect and exclude the backup destination folder if it happens to be inside the source directory. This makes it safe to perform large backups, such as of an entire user's home directory, without creating a dangerous recursive backup loop.
+### Key Feature: Recursion & Backup Prevention
 
-By default, all backups are stored in `~/backups/`, but this can be changed via a configuration file (see Setup).
+This script includes a critical safety feature: it automatically detects if the backup destination directory is located _inside_ the source directory you are trying to back up. If it is, the script will refuse to run, preventing a dangerous recursive loop that would otherwise fill your hard drive. This makes it safe to run commands like `backup.dir .`.
 
 ### Setup (Optional)
 
-To change the default backup destination, create a configuration file:
+By default, all backups are stored in `~/backups`. To change this destination:
 
-mkdir -p ~/.config/backup_system
-cp config.example ~/.config/backup_system/config
-Then edit ~/.config/backup_system/config to set your desired path.
+1.  Create a configuration directory within:
+    `~/.config/backup_system`
 
-Usage
+2.  Copy the configuration template:
+    `back`
+    from this repo to `~/.config/backup_system/config`
 
-To use the command, simply call it with the path to the directory you want to back up.
+3.  Edit `~/.config/backup_system/config` to set your preferred `BACKUP_DEST_DIR` path.
+
+### Usage
+
+Simply provide the path to the directory you want to back up.
 
 # Back up a specific configuration folder
 
-backup_dir ~/.config/nvim
+`backup.dir ~/.config/htop`
 
-# Back up your entire home directory
+# Back up your entire home directory safely
 
-backup*dir ~
-This will create a file like your_directory_backup*...tar.gz inside the destination folder.
+`backup.dir ~`
 
-How to Restore From a Backup
+> This will create a file like `your_directory.backup.[DATE].tar.gz` inside your configured destination folder.
 
-Use the tar command to extract your files.
+## How to Restore from a Backup
+
+Use the `tar` command to extract your files. For a standard restore:
+
+### Generated Bash
 
 # Navigate to where you want the files placed and run:
 
-tar xzf /path/to/your/backup_file.tar.gz
+`tar -xvf /path/to/your/backup_file.tar.gz`
 
-# For a full system restore, use sudo and the -p flag to preserve permissions
+For a full system restore where permissions are critical use `-x` and the `-p` (preserve-permissions) flag:
 
-sudo tar xpzf /path/to/your/backup_file.tar.gz
+### Generated Bash
+
+`sudo tar -xpf /path/to/full/backup_file.tar.gz`
 
 ---
 
-sync_backup Command
+## sync.dir Command
 
-Overview
+### Summary
 
-This command uses rsync to perform fast, incremental backups. Instead of creating a new archive every time, it synchronizes a destination directory to perfectly mirror a source directory. It is extremely efficient because it only copies files that are new or have been changed.
+This command uses `rsync` to perform fast, incremental backups. Instead of creating a new archive every time, it efficiently synchronizes a destination directory to be an exact mirror of a source directory. It's extremely fast after the initial run because it only copies files that are new or have been changed.
 
-Usage
+### Warning: Destructive Operation
+
+This command uses `rsync` with the `--delete` option. This means any file that exists in the destination but not in the source will be **permanently deleted** from the destination to maintain a perfect mirror.
+
+To prevent accidental data loss, the script now includes a **safety prompt** and will require you to confirm with a `y` before it makes any changes.
+
+### Usage
 
 Specify the source directory and the destination directory.
 
-# Example: Keep a mirror of Documents on an external drive
+### Generated Bash
 
-sync_backup ~/Documents /mnt/external_drive/backups/documents
+# Sync your Documents folder to an external drive
 
-How It Works
+`sync.dir ~/Documents /mnt/external_drive/backups/documents`
 
-This script uses rsync with the following key options:
+### How it Works
 
-    -a (archive): Preserves all permissions, ownership, and metadata.
+This script uses `rsync` with the following key options for a safe and informative experience:
 
-    --delete: IMPORTANT. This deletes files from the backup destination if they have been deleted from the source. This keeps the backup a perfect mirror, but use it with care.
+1.  `-a` (archive): Preserves permissions, ownership, and other metadata.
+2.  `-v` (verbose): Shows which files are being transferred.
+3.  `-h` (human-readable): Displays file sizes in KB, MB, GB, etc.
+4.  `--progress`: Shows the progress of larger file transfers.
+5.  `--delete`: Deletes files from the destination if they've been removed from the source.

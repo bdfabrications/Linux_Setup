@@ -47,6 +47,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
   exit 1
 fi
 
+# shellcheck source=/dev/null
 source "$CONFIG_FILE"
 
 if [[ -z "$API_KEY" || "$API_KEY" == "your-brevo-api-key" ]]; then

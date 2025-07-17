@@ -1,58 +1,63 @@
 #!/bin/bash
 #
-# install_links.sh - Creates symlinks from the repository to the user's home directory,
-# setting up the entire environment from this repository.
-#
+# install_links.sh - Deploys all personal configurations by creating symbolic links.
+# This is the "heart" of the setup, linking repository files to their correct
+# locations in the user's home directory.
 
-# Get the absolute path of the repository's root directory (Linux_Setup)
-# This makes the script runnable from anywhere.
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+set -euo pipefail
 
-# This is the correct target directory we discovered for your system.
-TARGET_BIN_DIR="$HOME/bin"
+# --- Configuration and Helper Functions ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." &>/dev/null && pwd)"
 
-echo "Setting up symlinks..."
-echo "Repository is at: $REPO_DIR"
-echo "Target bin directory is: $TARGET_BIN_DIR"
-echo ""
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_warn() { echo -e "\033[1;33m[WARN]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
 
-# Ensure the target bin directory exists for executables
-mkdir -p "$TARGET_BIN_DIR"
+# --- Main Logic ---
 
-# --- Link Executable Scripts ---
-# For each project, link its main script(s) into the user's bin directory.
-echo "Linking executable scripts..."
-# remind_me project
-ln -sfn "$REPO_DIR/remind_me/remind_me.sh" "$TARGET_BIN_DIR/remind_me"
-ln -sfn "$REPO_DIR/remind_me/email_test.sh" "$TARGET_BIN_DIR/email_test"
-# backup_system project
-ln -sfn "$REPO_DIR/backup_system/backup_dir.sh" "$TARGET_BIN_DIR/backup_dir"
-ln -sfn "$REPO_DIR/backup_system/sync_backup.sh" "$TARGET_BIN_DIR/sync_backup"
-# system_manager project
-ln -sfn "$REPO_DIR/system_manager/update_system.sh" "$TARGET_BIN_DIR/update_system"
-# project_scaffolding project
-ln -sfn "$REPO_DIR/project_scaffolding/new_pyproject.sh" "$TARGET_BIN_DIR/new_pyproject"
-ln -sfn "$REPO_DIR/project_scaffolding/new_webproject.sh" "$TARGET_BIN_DIR/new_webproject"
-# shell_helpers project
-ln -sfn "$REPO_DIR/shell_helpers/rgf_helper/rgf.sh" "$TARGET_BIN_DIR/rgf"
-ln -sfn "$REPO_DIR/shell_helpers/simple_server/serve_here.sh" "$TARGET_BIN_DIR/serve_here"
-ln -sfn "$REPO_DIR/shell_helpers/ollama_chat/ollama_chat.sh" "$TARGET_BIN_DIR/ollama_chat"
+log_info "Creating symbolic links for configuration files..."
 
-# --- Link Shell Configs ---
-echo "Linking shell configuration..."
-ln -sfn "$REPO_DIR/shell_config/bash_aliases" "$HOME/.bash_aliases"
-ln -sfn "$REPO_DIR/shell_config/bashrc_config" "$HOME/.bashrc_config"
+# Ensure the target directories exist.
+mkdir -p "$HOME/.config"
+mkdir -p "$HOME/bin"
 
-# --- Link Neovim Config ---
-echo "Linking Neovim configuration..."
-# This command directly creates the symlink without making a directory first.
-ln -sfn "$REPO_DIR/astronvim" "$HOME/.config/nvim"
+# --- Link Core Shell Configuration ---
+log_info "Linking shell configuration..."
+ln -sf "$REPO_ROOT/shell_config/bashrc_config" "$HOME/.bashrc_config"
+ln -sf "$REPO_ROOT/shell_config/bash_aliases" "$HOME/.bash_aliases"
 
-# --- Link Shell Theming ---
-echo "Linking Oh My Posh themes..."
-# This links the entire theme directory into the home folder
-ln -sfn "$REPO_DIR/shell_theming/poshthemes" "$HOME/.poshthemes"
+# --- Link Tmux Configuration ---
+log_info "Linking tmux configuration..."
+ln -sf "$REPO_ROOT/tmux_config/tmux.conf" "$HOME/.tmux.conf"
 
-echo ""
-echo "Symlink setup complete!"
-echo "You may need to restart your shell for all changes to take effect."
+# --- Link Oh My Posh Themes ---
+log_info "Linking Oh My Posh themes directory..."
+ln -sf "$REPO_ROOT/shell_theming/poshthemes" "$HOME/.poshthemes"
+
+# --- Link AstroNvim Configuration ---
+log_info "Linking AstroNvim user configuration..."
+mkdir -p "$HOME/.config/nvim/lua/user"
+ln -sf "$REPO_ROOT/astronvim/init.lua" "$HOME/.config/nvim/lua/user/init.lua"
+
+# --- Link All Helper Scripts to ~/bin ---
+log_info "Linking all helper scripts to '$HOME/bin'..."
+# Find all files (not directories) in all subdirectories of shell_helpers and system_manager,
+# excluding READMEs and config examples, and link them.
+find "$REPO_ROOT/shell_helpers" "$REPO_ROOT/system_manager" -mindepth 2 -type f \
+    ! -name 'README.md' ! -name 'config.example' | while read -r script_path; do
+    script_name=$(basename "$script_path")
+    ln -sf "$script_path" "$HOME/bin/$script_name"
+    log_info "  -> Linked '$script_name'"
+done
+
+# --- Final PATH Validation ---
+# Check if ~/bin is in the user's PATH. This is a critical check.
+if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
+    log_warn "Your PATH does not seem to include '$HOME/bin'."
+    log_warn "Please add 'export PATH=\"\$HOME/bin:\$PATH\"' to your ~/.bashrc or ~/.profile and restart your shell."
+else
+    log_info "'$HOME/bin' is correctly found in your PATH."
+fi
+
+log_success "Symbolic link setup complete."

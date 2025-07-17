@@ -1,81 +1,164 @@
 #!/bin/bash
+#
 # Master setup script for WSL (Ubuntu/Debian-based) environments.
-# This script acts as an orchestrator, installing core dependencies
-# and then running all modular installation routines.
+# This script orchestrates the entire setup process, is idempotent,
+# and provides clear feedback to the user.
 
-set -e
-echo "--- Starting Master WSL Environment Setup ---"
+# A more robust shell script header
+set -euo pipefail
 
-# --- Ensure Script is Run from Repo Root ---
-if [ ! -d "./setup_scripts" ] || [ ! -d "./install_routines" ]; then
-	echo "[Error] Please run this script from the root directory of the repository." >&2
-	exit 1
-fi
-REPO_ROOT_DIR=$(pwd)
-INSTALL_ROUTINES_DIR="$REPO_ROOT_DIR/install_routines"
+# --- Script Configuration and Path Management ---
+# Use the script's own location to reliably determine the repository root.
+# This makes the script runnable from any directory.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." &>/dev/null && pwd)"
+INSTALL_ROUTINES_DIR="$REPO_ROOT/Linux_Experimental/install_routines"
 
-# --- PHASE 1: Install Core System Dependencies ---
-echo "[PHASE 1] Installing core dependencies via apt..."
-sudo apt-get update
-# libfuse2 is required for AppImage support, which is common in WSL.
-sudo apt-get install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm libfuse2 lolcat
+# --- Helper Functions for Logging ---
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
+log_error() { echo -e "\033[1;31m[ERROR]\033[0m $1" >&2; exit 1; }
 
-# Create 'fd' symlink needed on Debian-based systems
-if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
-	echo "Creating 'fd' symlink for 'fdfind'..."
-	sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
-fi
-echo "Core dependencies installed."
-echo ""
+# --- Sudo Privilege Check ---
+check_sudo() {
+    log_info "Checking for sudo privileges..."
+    if ! sudo -v; then
+        log_error "Sudo privileges are required to proceed. Aborting."
+    fi
+    # Keep sudo privileges alive throughout the script execution.
+    sudo -v
+    log_success "Sudo privileges confirmed."
+}
 
-# --- PHASE 2: Run Individual Software Installers ---
-echo "[PHASE 2] Executing all installation routines from $INSTALL_ROUTINES_DIR..."
-# NOTE: We now explicitly call the AstroNvim installer AFTER the main Neovim installer.
-bash "$INSTALL_ROUTINES_DIR/10_oh_my_posh.sh"
-bash "$INSTALL_ROUTINES_DIR/15_tmux.sh"
-bash "$INSTALL_ROUTINES_DIR/20_neovim.sh"
-bash "$INSTALL_ROUTINES_DIR/25_astronvim.sh"
-bash "$INSTALL_ROUTINES_DIR/30_ollama.sh"
-bash "$INSTALL_ROUTINES_DIR/40_docker.sh"
-# --- NEW: Add new installers ---
-bash "$INSTALL_ROUTINES_DIR/50_pre-commit.sh"
-bash "$INSTALL_ROUTINES_DIR/60_just.sh"
-bash "$INSTALL_ROUTINES_DIR/70_terminal_enhancements.sh"
-bash "$INSTALL_ROUTINES_DIR/80_1password_cli.sh"
-echo "All installation routines completed."
-echo ""
+# --- Main Setup Functions ---
 
-# --- PHASE 3: Set up User Config Files ---
-echo "[PHASE 3] Setting up user configuration files..."
-bash "$REPO_ROOT_DIR/setup_scripts/install_configs.sh"
-echo "User configurations set up."
-echo ""
+set_script_permissions() {
+    log_info "--- PREP: Setting execute permissions for all setup scripts ---"
+    
+    # Set permissions for scripts in the setup_scripts directory
+    for script in "$SCRIPT_DIR"/*.sh; do
+        if [ -f "$script" ]; then
+            chmod +x "$script"
+        fi
+    done
 
-# --- PHASE 4: Link All Configurations & Scripts ---
-echo "[PHASE 4] Linking all dotfiles and configurations..."
-# The install_links.sh script now handles sourcing automatically.
-bash "$REPO_ROOT_DIR/setup_scripts/install_links.sh"
-echo "Dotfiles linked."
-echo ""
+    # Set permissions for all modular installation routines
+    if [ -d "$INSTALL_ROUTINES_DIR" ]; then
+        for installer in "$INSTALL_ROUTINES_DIR"/*.sh; do
+            if [ -f "$installer" ]; then
+                chmod +x "$installer"
+            fi
+        done
+    fi
+    log_success "All necessary scripts are now executable."
+}
 
-# --- PHASE 5: Finalize Neovim Setup ---
-echo "[PHASE 5] Running final Neovim bootstrapping..."
-bash "$REPO_ROOT_DIR/setup_scripts/finalize_neovim.sh"
-echo "Neovim finalization complete."
-echo ""
+install_core_dependencies() {
+    log_info "--- PHASE 1: Installing Core Dependencies (WSL) ---"
+    sudo apt-get update
+    
+    # List of packages is broken into multiple lines for readability.
+    # Note: Docker is omitted as it's typically managed on the Windows host.
+    sudo apt-get install -y \
+        build-essential \
+        ca-certificates \
+        curl \
+        fd-find \
+        figlet \
+        fzf \
+        git \
+        jq \
+        libfuse2 \
+        lolcat \
+        nodejs \
+        npm \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ripgrep \
+        tar \
+        unzip \
+        wget
 
-# --- PHASE 6: Final Manual Step Required ---
-echo "[PHASE 6] Final Manual Step Required"
-echo "To complete the setup, please run the following command to link your new shell configuration:"
-echo ""
-echo "  echo 'if [ -f ~/.bashrc_config ]; then . ~/.bashrc_config; fi' >> ~/.bashrc"
-echo ""
-echo "This only needs to be done once."
+    # Create 'fd' symlink if needed (for Debian/Ubuntu where binary is 'fdfind').
+    if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
+        log_info "Creating 'fd' symlink for 'fdfind'."
+        sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
+    fi
+    log_success "Core dependencies installed."
+}
 
+run_install_routines() {
+    log_info "--- PHASE 2: Executing Modular Installation Routines ---"
+    if [ ! -d "$INSTALL_ROUTINES_DIR" ]; then
+        log_info "No install_routines directory found, skipping."
+        return
+    fi
 
-# --- Finish ---
-echo "-------------------------------------------------"
-echo "✅ Master WSL Setup Complete!"
-echo "Please RESTART YOUR WSL TERMINAL for all changes to take effect."
-echo "-------------------------------------------------"
-exit 0
+    # Now that scripts are executable, run them directly.
+    for installer in "$INSTALL_ROUTINES_DIR"/*.sh; do
+        if [ -f "$installer" ]; then
+            log_info "--> Running installer: $(basename "$installer")"
+            "$installer"
+        fi
+    done
+    log_success "All installation routines completed."
+}
+
+setup_user_configs() {
+    log_info "--- PHASE 3: Setting Up User Configuration Files ---"
+    "$SCRIPT_DIR/install_configs.sh"
+    log_success "User configurations set up."
+}
+
+link_configurations() {
+    log_info "--- PHASE 4: Linking All Dotfiles & Scripts ---"
+    "$SCRIPT_DIR/install_links.sh"
+    log_success "Dotfiles linked."
+}
+
+finalize_neovim() {
+    log_info "--- PHASE 5: Finalizing Neovim Setup ---"
+    "$SCRIPT_DIR/finalize_neovim.sh"
+    log_success "Neovim finalization complete."
+}
+
+source_in_bashrc() {
+    log_info "--- PHASE 6: Ensuring Shell Configuration is Loaded ---"
+    local line_to_add="if [ -f ~/.bashrc_config ]; then . ~/.bashrc_config; fi"
+    
+    # Check if the line already exists in .bashrc to prevent duplicates.
+    if grep -qFx -- "$line_to_add" ~/.bashrc; then
+        log_info "Sourcing line already exists in ~/.bashrc. No action needed."
+    else
+        log_info "Adding sourcing line to ~/.bashrc for automation."
+        echo "" >> ~/.bashrc
+        echo "# Load custom shell functions and aliases from my_linux_setup" >> ~/.bashrc
+        echo "$line_to_add" >> ~/.bashrc
+        log_success "Sourcing line added to ~/.bashrc."
+    fi
+}
+
+# --- Script Execution Orchestrator ---
+main() {
+    log_info "--- Starting Master WSL Environment Setup ---"
+    
+    check_sudo
+    set_script_permissions
+    install_core_dependencies
+    run_install_routines
+    setup_user_configs
+    link_configurations
+    finalize_neovim
+    source_in_bashrc
+
+    echo
+    log_success "-------------------------------------------------"
+    log_success "✅ Master WSL Setup Complete!"
+    log_info "Please RESTART YOUR WSL TERMINAL for all changes to take effect."
+    log_success "-------------------------------------------------"
+    exit 0
+}
+
+# Run the main function
+main

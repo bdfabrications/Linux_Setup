@@ -1,46 +1,54 @@
 #!/bin/bash
 #
-# install_configs.sh - Sets up the user's private configuration files
-# from the templates stored in the repository.
+# install_configs.sh - Sets up default user configuration templates.
+# Iterates through all project directories, finds `config.example` files,
+# and copies them to the corresponding ~/.config/ directory if no user
+# configuration already exists.
 
-# Get the absolute path of the repository's root directory
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+set -euo pipefail
 
-echo "--- Setting up User Configurations ---"
+# --- Configuration and Helper Functions ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+PROJECTS_ROOT="$(cd "$SCRIPT_DIR/.." &>/dev/null && pwd)"
 
-# --- Function to copy a config template if it doesn't already exist ---
-setup_config() {
-    local project_name="$1"
-    local project_dir="$REPO_DIR/$2"
-    local target_config_dir="$HOME/.config/$project_name"
-    local target_config_file="$target_config_dir/config"
-    local source_config_example="$project_dir/config.example"
+# Define logging functions for clear user feedback.
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_skip() { echo -e "\033[1;33m[SKIP]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
 
-    if [ ! -f "$source_config_example" ]; then
-        # This project doesn't have a config file, so we skip it.
-        return
+# --- Main Logic ---
+log_info "Searching for configuration templates to install..."
+
+# Loop through all immediate subdirectories in the projects root.
+# This is more robust than looping through '*/'.
+find "$PROJECTS_ROOT" -mindepth 1 -maxdepth 1 -type d | while read -r project_path; do
+    project_name=$(basename "$project_path")
+    example_config_file="$project_path/config.example"
+
+    # Check if a config.example file exists in the directory.
+    if [ -f "$example_config_file" ]; then
+        config_dir_name="$project_name"
+        
+        # Handle special directory names if necessary.
+        # This makes the script more adaptable.
+        if [ "$project_name" == "ollama_chat" ]; then
+            config_dir_name="ollama_helper"
+        fi
+
+        user_config_dir="$HOME/.config/$config_dir_name"
+        user_config_file="$user_config_dir/config"
+
+        # Create the target directory in ~/.config if it doesn't exist.
+        mkdir -p "$user_config_dir"
+
+        # Copy the template ONLY if the user configuration does not already exist.
+        if [ ! -f "$user_config_file" ]; then
+            log_info "Installing template for '$project_name' to '$user_config_file'"
+            cp "$example_config_file" "$user_config_file"
+        else
+            log_skip "User config for '$project_name' already exists at '$user_config_file'. Skipping."
+        fi
     fi
+done
 
-    echo "Processing config for: $project_name"
-    mkdir -p "$target_config_dir"
-
-    if [ ! -f "$target_config_file" ]; then
-        echo "  -> No user config found. Copying template..."
-        cp "$source_config_example" "$target_config_file"
-        chmod 600 "$target_config_file"
-        echo "  -> Template copied to $target_config_file. Please edit it with your personal values."
-    else
-        echo "  -> User config already exists. Skipping."
-    fi
-}
-
-# --- Define all projects that have a config.example file ---
-setup_config "backup_system" "backup_system"
-setup_config "ollama_helper" "shell_helpers/ollama_chat"
-setup_config "project_scaffolding" "project_scaffolding"
-setup_config "remind_me" "remind_me"
-setup_config "rgf_helper" "shell_helpers/rgf_helper"
-setup_config "simple_server" "shell_helpers/simple_server"
-
-echo ""
-echo "--- User Configuration Setup Complete ---"
+log_success "Configuration template setup complete."

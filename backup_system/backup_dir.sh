@@ -1,81 +1,63 @@
 #!/bin/bash
-# Simple script to create a timestamped backup of a specified directory.
-# Version 4.0: Reads destination from an optional config file.
+#
+# Creates a timestamped, compressed .tar.gz backup of a specified directory.
 
-# --- Help Function ---
-display_help() {
-  echo "Creates a timestamped .tar.gz backup of a directory."
-  echo "For detailed instructions, please see the README.md file in the backup_system project directory."
+# Exit on error, treat unset variables as an error, and disable globbing.
+set -euo pipefail
+
+# --- Configuration & Helper Functions ---
+CONFIG_FILE="$HOME/.config/backup_system/config"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+fi
+
+# Set a default backup destination if not defined in the config.
+BACKUP_DEST_DIR="${BACKUP_DEST_DIR:-$HOME/backups}"
+
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
+log_error() { echo -e "\033[1;31m[ERROR]\033[0m $1" >&2; exit 1; }
+
+# --- Main Logic ---
+main() {
+    if [ "$#" -ne 1 ]; then
+        log_error "Usage: backup_dir <directory_to_backup>"
+    fi
+
+    local source_dir="$1"
+    # Use realpath to get the absolute, canonical path.
+    local source_path
+    source_path=$(realpath "$source_dir")
+    local dest_path
+    dest_path=$(realpath "$BACKUP_DEST_DIR")
+
+    if [ ! -d "$source_path" ]; then
+        log_error "Source directory not found: $source_path"
+    fi
+
+    # The most critical safety check: prevent recursive backups.
+    if [[ "$dest_path" == "$source_path"* ]]; then
+        log_error "Safety abort! The destination directory is inside the source directory."
+    fi
+
+    # Create the backup destination directory if it doesn't exist.
+    mkdir -p "$dest_path"
+
+    local timestamp
+    timestamp=$(date +"%Y%m%d_%H%M%S")
+    local backup_filename
+    backup_filename="$(basename "$source_path")_backup_${timestamp}.tar.gz"
+    local full_backup_path="$dest_path/$backup_filename"
+
+    log_info "Starting backup of '$source_path'..."
+    log_info "Destination: '$full_backup_path'"
+
+    # The --exclude option is crucial for preventing the backup from including itself.
+    if tar -czf "$full_backup_path" --exclude="$dest_path" -C "$(dirname "$source_path")" "$(basename "$source_path")"; then
+        log_success "Backup completed successfully."
+    else
+        log_error "Backup failed. Please check for errors above."
+    fi
 }
 
-# --- Argument Parsing ---
-if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-  display_help
-  exit 0
-fi
-
-if [ -z "$1" ]; then
-  echo "Usage: backup_dir <directory_to_backup>"
-  echo "Use 'backup_dir --help' for more information."
-  exit 1
-fi
-
-# --- Configuration ---
-# Define the default backup destination.
-BACKUP_DEST_DIR="$HOME/backups"
-SOURCE_DIR="$1"
-
-# Define the path to the user's private config file.
-USER_CONFIG_FILE="$HOME/.config/backup_system/config"
-
-# If the user's config file exists, source it to override the default.
-if [ -f "$USER_CONFIG_FILE" ]; then
-  source "$USER_CONFIG_FILE"
-fi
-
-# --- Validate Paths ---
-if [ ! -d "$SOURCE_DIR" ]; then
-  echo "Error: Source directory '$SOURCE_DIR' not found."
-  exit 1
-fi
-
-if [ ! -d "$BACKUP_DEST_DIR" ]; then
-  echo "Info: Backup destination '$BACKUP_DEST_DIR' not found. Creating it..."
-  mkdir -p "$BACKUP_DEST_DIR"
-  if [ $? -ne 0 ]; then
-    echo "Error: Failed to create backup directory '$BACKUP_DEST_DIR'."
-    exit 1
-  fi
-fi
-
-# --- Prepare for Backup ---
-BASENAME=$(basename "$SOURCE_DIR")
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILENAME="${BASENAME}_backup_${TIMESTAMP}.tar.gz"
-BACKUP_FULL_PATH="$BACKUP_DEST_DIR/$BACKUP_FILENAME"
-PARENT_DIR=$(dirname "$SOURCE_DIR")
-DIR_TO_ARCHIVE=$(basename "$SOURCE_DIR")
-
-# --- Exclusion Logic ---
-declare -a TAR_EXTRA_OPTS=()
-CANONICAL_SOURCE=$(readlink -f "$SOURCE_DIR")
-CANONICAL_BACKUP_DEST=$(readlink -f "$BACKUP_DEST_DIR")
-
-if [[ "$CANONICAL_BACKUP_DEST"/ == "$CANONICAL_SOURCE"/* ]]; then
-  EXCLUDE_PATTERN="${DIR_TO_ARCHIVE}/$(basename "$CANONICAL_BACKUP_DEST")"
-  echo "Info: Backup destination is inside the source. Excluding '$EXCLUDE_PATTERN'."
-  TAR_EXTRA_OPTS+=(--exclude="$EXCLUDE_PATTERN")
-fi
-
-# --- Create Backup ---
-echo "Starting backup of '$SOURCE_DIR'..."
-echo "Backup file will be: $BACKUP_FULL_PATH"
-
-if tar czf "$BACKUP_FULL_PATH" "${TAR_EXTRA_OPTS[@]}" -C "$PARENT_DIR" "$DIR_TO_ARCHIVE"; then
-  echo "Backup created successfully!"
-else
-  echo "Error: Backup creation failed."
-  exit 1
-fi
-
-exit 0
+main "$@"

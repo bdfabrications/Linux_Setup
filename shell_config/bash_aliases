@@ -1,33 +1,28 @@
 # ~/.bash_aliases
-# This file is sourced by ~/.bashrc
+# This file is sourced by ~/.bashrc for custom command aliases.
 
-# --- eza aliases (modern ls replacement) ---
-# Added --color=always to force color output and resolve shell conflicts.
-alias ls='eza --color=always --icons'
-alias la='eza --color=always -a --icons' # show all files
-alias ll='eza --color=always -l --icons --git' # long format with git status
-alias llt='eza --color=always -lT --icons --git' # long format as a tree
+# --- eza (modern ls) ---
+# Consistently using --color=always to prevent conflicts and ensure colored output.
+# Added --group-directories-first for better readability.
+alias ls='eza --color=always --icons --group-directories-first'
+alias la='eza --color=always --all --icons --group-directories-first'
+alias ll='eza --long --color=always --git --icons --group-directories-first'
+alias llt='eza --long --tree --color=always --git --icons --group-directories-first'
+
+# --- Navigation ---
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
 
 # --- Custom Script Aliases ---
-# Rely on scripts being in the PATH (via ~/bin) instead of hardcoding the path.
-
-# System & Project Management
-alias update-sys='sudo update_system'
+# These rely on the scripts being in the user's PATH (e.g., ~/bin).
+alias update-sys='update_system'
 alias newpy='new_pyproject'
 alias newweb='new_webproject'
-
-# Backups
 alias backupd='backup_dir'
 alias syncd='sync_backup'
-
-# Helpers
-alias rgf='rgf'
 alias serveh='serve_here'
 alias ochat='ollama_chat'
 alias remindme='remind_me'
-
-# --- End Custom Aliases ---
-
-# modernvim alias definition
-# This is correctly defined for a self-contained AppImage with a custom configuration.
-alias modernvim='XDG_CONFIG_HOME="/home/crustysamwich/modern-nvim/config" XDG_DATA_HOME="/home/crustysamwich/modern-nvim/data" "/home/crustysamwich/modern-nvim/nvim.appimage"'
+alias lznpm='lazynpm'
+alias lzgit='lazygit' # Added for consistency with lznpm

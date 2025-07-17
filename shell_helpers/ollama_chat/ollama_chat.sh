@@ -1,65 +1,51 @@
 #!/bin/bash
-# Ensures Ollama server is running and starts an interactive chat with a specified model.
-# Version 2.0: Reads default model from an optional config file.
+#
+# A wrapper script for the 'ollama' command-line tool that provides
+# a convenient interactive chat session.
 
-# --- Help Function ---
-show_help() {
-    echo "A wrapper to start an interactive Ollama chat session."
-    echo "Usage: ollama_chat [model_name]"
-    echo "For detailed instructions, see the README.md in the ollama_helper project."
-}
+set -euo pipefail
 
-# --- Argument Parsing ---
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    show_help
-    exit 0
+# --- Configuration & Helper Functions ---
+CONFIG_FILE="$HOME/.config/ollama_helper/config"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
 fi
 
-# --- Configuration ---
-# Define a default model.
-DEFAULT_MODEL="llama3:8b"
+# Set a default model if not provided by user config or command line.
+DEFAULT_MODEL="${DEFAULT_MODEL:-llama3:8b}"
+MODEL_TO_USE="${1:-$DEFAULT_MODEL}"
 
-# Define the path to the user's private config file.
-USER_CONFIG_FILE="$HOME/.config/ollama_helper/config"
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_error() { echo -e "\033[1;31m[ERROR]\033[0m $1" >&2; exit 1; }
 
-# If the user's config file exists, source it to override the default.
-if [ -f "$USER_CONFIG_FILE" ]; then
-    source "$USER_CONFIG_FILE"
-fi
-
-# Use the first command-line argument as the model, or the configured default.
-MODEL_NAME="${1:-$DEFAULT_MODEL}"
-
-# --- Check Dependencies ---
+# --- Dependency Checks ---
 if ! command -v ollama &>/dev/null; then
-    echo "Error: 'ollama' command not found. Please ensure Ollama is installed." >&2
-    exit 1
+    log_error "ollama command not found. Please install Ollama to use this script."
+fi
+if ! command -v curl &>/dev/null; then
+    log_error "curl command not found, which is required to check the server status."
 fi
 
-# --- Ensure Server is Running ---
-echo "Checking Ollama server status..."
-if ! curl --silent --output /dev/null --head --fail --connect-timeout 2 http://localhost:11434; then
-    echo "Ollama server not detected. Starting it in the background..."
-    ollama serve &
-    echo "Waiting for server to start..."
+# --- Main Logic ---
+# Check if the Ollama server is running by making a quiet request to its endpoint.
+if ! curl -s --fail http://localhost:11434 > /dev/null; then
+    log_info "Ollama server not detected. Attempting to start it in the background..."
+    # Use 'nohup' and redirect output to ensure the process detaches from the terminal.
+    nohup ollama serve > /tmp/ollama.log 2>&1 &
+    
+    # Give the server a moment to start up.
     sleep 3
-    if ! curl --silent --output /dev/null --head --fail --connect-timeout 2 http://localhost:11434; then
-        echo "Error: Failed to connect to Ollama server after starting it." >&2
-        exit 1
+    
+    if ! curl -s --fail http://localhost:11434 > /dev/null; then
+        log_error "Failed to start the Ollama server. Check logs at /tmp/ollama.log"
+    else
+        log_info "Ollama server started successfully."
     fi
-    echo "Ollama server started successfully."
-else
-    echo "Ollama server is running."
 fi
 
-# --- Start Interactive Chat ---
-echo ""
-echo "Starting interactive chat with model: $MODEL_NAME"
-echo "Type '/bye' or press Ctrl+D to exit the chat."
-echo "---"
+log_info "Starting interactive chat with model: ${MODEL_TO_USE}"
+log_info "To exit the chat, type /bye or press Ctrl+D."
+echo "----------------------------------------------------"
 
-ollama run "$MODEL_NAME"
-
-echo "---"
-echo "Ollama chat session ended."
-exit 0
+# Start the interactive chat session.
+ollama run "${MODEL_TO_USE}"

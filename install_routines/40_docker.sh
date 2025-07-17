@@ -24,6 +24,7 @@ sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
 # --- Step 3: Set up the Docker repository ---
 echo "Setting up the Docker repository..."
+# shellcheck source=/dev/null
 echo \
 	"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
@@ -36,7 +37,7 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plug
 
 # --- Step 5: Add current user to the docker group ---
 echo "Adding current user ($USER) to the 'docker' group..."
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER"
 
 # --- Step 6: Final instructions ---
 echo ""

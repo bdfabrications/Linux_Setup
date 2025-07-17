@@ -1,135 +1,183 @@
-# This script contains shareable functions and logic for the welcome message.
-# It will look for private settings in ~/.config/bash-personal/config
+#!/bin/bash
+#
+# This script contains shareable functions and the welcome message logic.
+# It sources an optional private configuration from ~/.config/bash-personal/config.
 
 # --- Configuration with Private Overrides ---
-# Define safe, shareable defaults
-FIGLET_TEXT="Welcome"
-LOCATION="" # Default to empty, allowing for IP-based lookup
-
-# Define the path to the private configuration file
+# Source the optional private configuration file if it exists.
+# This allows overriding the default variables defined below.
 PRIVATE_CONFIG_FILE="$HOME/.config/bash-personal/config"
-
-# If the private file exists, source it to override the defaults.
-# The 'if' block should only contain the 'source' command.
 if [ -f "$PRIVATE_CONFIG_FILE" ]; then
     source "$PRIVATE_CONFIG_FILE"
-fi # --- CORRECTED: The 'if' block now ends here. ---
+fi
+
+# Set safe, shareable defaults. These are used if not set in the private config.
+# Using ${VAR:-default} is a robust way to set defaults.
+FIGLET_TEXT="${FIGLET_TEXT:-Welcome}"
+LOCATION="${LOCATION:-}" # Default to empty for IP-based geo-lookup by wttr.in.
+PROJECTS_BASE_DIR="${PROJECTS_BASE_DIR:-$HOME/projects}"
 
 #
-# my_help: An interactive command palette using fzf.
+# my_help: An interactive command palette powered by fzf.
 #
 my_help() {
-    # Check for fzf dependency
+    # Ensure fzf is available before proceeding.
     if ! command -v fzf &>/dev/null; then
-        echo "Error: fzf command not found. Please install it to use this feature." >&2
+        printf "Error: fzf command not found. Please install it to use this feature.\n" >&2
         return 1
     fi
 
-    # Use a heredoc to create a clean, formatted list of commands.
-    # This list is then piped into fzf for interactive searching.
-    cat <<EOF | fzf --height 50% --reverse --border=rounded --header="Fuzzy Find Your Custom Commands"
+    # A heredoc provides a clean way to format the list of commands.
+    # This list is piped into fzf for an interactive search experience.
+    cat <<EOF | fzf --height=60% --reverse --border=rounded --header="Fuzzy Find Your Custom Commands"
 # --- System & Setup ---
-update_system           - Update all system packages (Debian/APT).
-install_links       - Re-links all configurations from the repository.
+update_system           - Update and clean the system (Debian/APT).
+install_links           - Re-links all configurations from the repository.
 
 # --- Project Management ---
-p                     - Interactively select a project to open in nvim.
-new_pyproject <name>  - Create a new boilerplate Python project.
-new_webproject <name> - Create a new boilerplate HTML/CSS/JS project.
+p                       - Interactively select a project to open in nvim.
+newpy <name>            - (Alias) Create a new boilerplate Python project.
+newweb <name>           - (Alias) Create a new boilerplate HTML/CSS/JS project.
+
+# --- Navigation ---
+..                      - Go up one directory.
+...                     - Go up two directories.
+....                    - Go up three directories.
 
 # --- Backups & Sync ---
-backup_dir <dir>      - Create a timestamped .tar.gz backup of a directory.
-sync_backup <src> <dest> - Mirror a directory using rsync (with delete).
+backupd <dir>           - (Alias) Create a timestamped .tar.gz backup of a directory.
+syncd <src> <dest>      - (Alias) Mirror a directory using rsync (with --delete).
 
 # --- Daily Helpers ---
-remind_me             - Set a future desktop/email reminder.
-ollama_chat [model]   - Start an interactive chat with an Ollama model.
-serve_here [port]     - Start a simple web server in the current directory.
-rgf <pattern> [path]  - Interactively search for a text pattern with ripgrep.
+remindme                - (Alias) Set a future desktop/email reminder.
+ochat [model]           - (Alias) Start an interactive chat with an Ollama model.
+serveh [port]           - (Alias) Start a simple web server in the current directory.
+rgf <pattern> [path]    - (Alias) Search for a text pattern with ripgrep.
+lznpm                   - (Alias) Open lazygit, a terminal UI for npm.
+lzgit                   - (Alias) Open lazygit, a terminal UI for git.
 EOF
 }
 
-# Function to cd into a project dir selected via fzf, activate venv, and open nvim
+#
+# p: A function to interactively find and open a project.
+# It cds into the selected directory, activates a Python venv if present,
+# and opens Neovim.
+#
 p() {
-    # Define the base directory where your projects are stored
-    local PROJECTS_BASE_DIR="$HOME/projects"
+    # Use local variables to prevent polluting the global shell environment.
     local selected_proj_path
 
-    if ! command -v fzf &>/dev/null; then echo "Error: fzf not found." >&2; return 1; fi
-    if [ ! -d "$PROJECTS_BASE_DIR" ]; then echo "Error: Project directory '$PROJECTS_BASE_DIR' not found." >&2; return 1; fi
-
-    if command -v fd &>/dev/null; then
-        selected_proj_path=$(fd . "$PROJECTS_BASE_DIR" --type d --max-depth 1 | fzf --height 40% --reverse --prompt="Select Project > ")
-    else
-        selected_proj_path=$(find "$PROJECTS_BASE_DIR" -mindepth 1 -maxdepth 1 -type d | fzf --height 40% --reverse --prompt="Select Project > ")
+    if ! command -v fzf &>/dev/null; then
+        printf "Error: fzf is required but not found.\n" >&2
+        return 1
     fi
 
-    if [ $? -eq 0 ] && [ -n "$selected_proj_path" ]; then
+    if [ ! -d "$PROJECTS_BASE_DIR" ]; then
+        printf "Error: Project directory '%s' not found.\n" "$PROJECTS_BASE_DIR" >&2
+        return 1
+    fi
+
+    # Use 'fd' if available (faster and simpler), otherwise fall back to a robust 'find'.
+    # The 'then' keyword is mandatory for the if-else block.
+    if command -v fd &>/dev/null; then
+        selected_proj_path=$(fd . "$PROJECTS_BASE_DIR" --type d --max-depth 1 | fzf --height=40% --reverse --prompt="Select Project > ")
+    else
+        # The find command now uses -print0 and fzf --read0 to handle names with spaces.
+        selected_proj_path=$(find "$PROJECTS_BASE_DIR" -mindepth 1 -maxdepth 1 -type d -print0 | fzf --read0 --height=40% --reverse --prompt="Select Project > ")
+    fi
+
+    # Proceed only if a project was selected (fzf returns empty on Esc).
+    if [ -n "$selected_proj_path" ]; then
         cd "$selected_proj_path" || return
-        echo "Changed to: $(pwd)"
+        printf "Changed directory to: %s\n" "$(pwd)"
+
+        # Activate Python virtual environment if it exists.
         if [ -f ".venv/bin/activate" ]; then
-            echo "Activating Python virtual environment (.venv)..."
+            printf "Activating Python virtual environment...\n"
             source .venv/bin/activate
         fi
+
+        # Open Neovim if it's installed.
         if command -v nvim &>/dev/null; then
-            echo "Opening nvim..."
+            printf "Opening nvim...\n"
             nvim
+        else
+            printf "nvim command not found.\n"
         fi
     else
-        echo "No project selected."
+        printf "No project selected.\n"
     fi
 }
 
-# --- Custom Welcome Message Logic ---
-echo "" # Start with a blank line
 
-# Dependencies Check
-FIGLET_CMD=$(command -v figlet)
-CURL_CMD=$(command -v curl)
+# --- Custom Welcome Message ---
+# This logic runs each time a new interactive terminal is opened.
+if [[ $- == *i* ]]; then
+    printf "\n" # Start with a blank line for spacing.
 
-# 1. Display ASCII Art Banner (uses FIGLET_TEXT variable)
-if [ -x "$FIGLET_CMD" ]; then
-    $FIGLET_CMD "$FIGLET_TEXT" | lolcat
-else
-    echo "============================="
-    echo "        $FIGLET_TEXT"
-    echo "============================="
-fi
-echo ""
-
-# 2. Display Time-Based Greeting
-CURRENT_HOUR=$(date +%H)
-USERNAME=$(whoami)
-GREETING="Good evening"
-if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
-    GREETING="Good morning"
-elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
-    GREETING="Good afternoon"
-fi
-echo "$GREETING, $USERNAME!" | lolcat
-echo ""
-
-# 3. Display Weather (uses LOCATION variable)
-echo "* Weather Info:" | lolcat
-if [ -x "$CURL_CMD" ]; then
-    weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
-    if [ $? -eq 0 ] && [ -n "$weather" ]; then
-        echo "  $weather"
+    # 1. Display ASCII Art Banner.
+    if command -v figlet &>/dev/null && command -v lolcat &>/dev/null; then
+        figlet "$FIGLET_TEXT" | lolcat
     else
-        echo "  (Could not retrieve weather. Set LOCATION in $PRIVATE_CONFIG_FILE)"
+        printf "=============================\n"
+        printf "        %s\n" "$FIGLET_TEXT"
+        printf "=============================\n"
     fi
-else
-    echo "  (Install 'curl' to enable weather)"
+    printf "\n"
+
+    # 2. Display a Time-Based Greeting.
+    CURRENT_HOUR=$(date +%H)
+    USERNAME=$(whoami)
+    GREETING="Good evening"
+    if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
+        GREETING="Good morning"
+    elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
+        GREETING="Good afternoon"
+    fi
+    
+    if command -v lolcat &>/dev/null; then
+        printf "%s, %s!\n\n" "$GREETING" "$USERNAME" | lolcat
+    else
+        printf "%s, %s!\n\n" "$GREETING" "$USERNAME"
+    fi
+
+    # 3. Display Weather Information.
+    if command -v lolcat &>/dev/null; then
+        printf "* Weather Info:\n" | lolcat
+    else
+        printf "* Weather Info:\n"
+    fi
+
+    if command -v curl &>/dev/null; then
+        # Use -fsSL to fail silently, show errors, and FOLLOW REDIRECTS (-L).
+        weather=$(curl -fsSL --connect-timeout 5 --max-time 10 \
+            -A "my-linux-setup-bash-prompt" \
+            "wttr.in/$LOCATION?format=3")
+        if [ -n "$weather" ]; then
+            printf "  %s\n" "$weather"
+        else
+            printf "  (Could not retrieve weather. Check connection or LOCATION in %s)\n" "$PRIVATE_CONFIG_FILE"
+        fi
+    else
+        printf "  (Install 'curl' to see weather information)\n"
+    fi
+    printf "\n"
+
+    # 4. Display a Handy Command Reference.
+    printf -- "--------------------------------------------------------\n"
+    if command -v lolcat &>/dev/null; then
+      printf "Quick Command Reference:\n" | lolcat
+    else
+      printf "Quick Command Reference:\n"
+    fi
+    printf "  %-22s - %s\n" "p" "Interactively select a project to open."
+    printf "  %-22s - %s\n" "my_help" "Fuzzy find all custom commands."
+    printf "  %-22s - %s\n" "update_system" "Update and clean the system (APT)."
+    printf -- "--------------------------------------------------------\n"
 fi
-echo ""
 
-# --- Handy Command Reference ---
-# This message is displayed each time a new terminal opens.
-echo "---"
-echo "Quick Command Reference:" | lolcat
-echo "  p                     - Interactively select a project to open."
-echo "  my_help               - Fuzzy find all custom commands."
-echo "---"
-
-# --- zoxide hook ---
-eval "$(zoxide init bash)"
+# --- Initialize Zoxide ---
+# A smarter cd command that learns your habits.
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init bash)"
+fi

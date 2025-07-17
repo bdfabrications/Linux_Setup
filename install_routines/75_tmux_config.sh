@@ -2,8 +2,11 @@
 
 echo "Setting up tmux configuration..."
 
+# Get the absolute path of the repository's root directory (Linux_Setup/Linux_Experimental)
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 TMUX_CONF_PATH="$HOME/.tmux.conf"
-NEW_TMUX_CONF_SOURCE="$DOTFILES_PATH/tmux_config/tmux.conf"
+NEW_TMUX_CONF_SOURCE="$REPO_DIR/tmux_config/tmux.conf"
 
 if [ -f "$TMUX_CONF_PATH" ]; then
     echo "Existing ~/.tmux.conf found."
@@ -13,7 +16,7 @@ if [ -f "$TMUX_CONF_PATH" ]; then
     echo "  - Appearance & Status Bar (colors, intervals, content)"
     echo "  - Plugin management (tpm, tmux-resurrect)"
     echo ""
-    read -p "Do you want to (o)verwrite, (a)dd alongside as .tmux.conf.new, or (s)kip? [o/a/s]: " choice
+    read -r -p "Do you want to (o)verwrite, (a)dd alongside as .tmux.conf.new, or (s)kip? [o/a/s]: " choice
     case "$choice" in
         o|O)
             echo "Overwriting existing ~/.tmux.conf..."

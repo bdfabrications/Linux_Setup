@@ -1,68 +1,75 @@
 #!/bin/bash
-# Creates a basic HTML/CSS/JS project structure.
-# Version 3.0: Adds pre-commit, justfile, and devcontainer.
+#
+# Creates a standard boilerplate project for a simple web application.
 
-# --- Help Function & Argument Parsing (remains the same) ---
+set -euo pipefail
 
-# --- Configuration ---
-PROJECTS_BASE_DIR="$HOME/projects"
-USER_CONFIG_FILE="$HOME/.config/project_scaffolding/config"
-if [ -f "$USER_CONFIG_FILE" ]; then
-    source "$USER_CONFIG_FILE"
+# --- Configuration & Helpers ---
+CONFIG_FILE="$HOME/.config/project_scaffolding/config"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
 fi
-PROJECT_NAME="$1"
-PROJECT_DIR="$PROJECTS_BASE_DIR/$PROJECT_NAME"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# --- Pre-checks (remains the same) ---
+PROJECTS_BASE_DIR="${PROJECTS_BASE_DIR:-$HOME/projects}"
 
-echo "--- Creating web project: $PROJECT_NAME in $PROJECTS_BASE_DIR ---"
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
+log_error() { echo -e "\033[1;31m[ERROR]\033[0m $1" >&2; exit 1; }
 
-# 1. Create directories and boilerplate files
-mkdir -p "$PROJECT_DIR"/{css,js,images}
-# ... (file creation remains the same) ...
+# --- Main Logic ---
+main() {
+    if [ "$#" -ne 1 ]; then
+        log_error "Usage: new_webproject <ProjectName>"
+    fi
 
-# 2. Initialize Git and create .gitignore
-git init "$PROJECT_DIR" -b main >/dev/null
-echo -e ".vscode/\n.DS_Store\nnode_modules/\n.devcontainer/" > "$PROJECT_DIR/.gitignore"
+    local project_name="$1"
+    local project_path="$PROJECTS_BASE_DIR/$project_name"
 
-# --- NEW: Add justfile ---
-echo "[3/6] Creating justfile..."
-cat <<EOF >"$PROJECT_DIR/justfile"
-# justfile for ${PROJECT_NAME}
+    if [ -d "$project_path" ]; then
+        log_error "Project directory already exists: $project_path"
+    fi
 
-# Serve the site locally
-serve:
-    serve_here 8000
+    log_info "Creating web project at: $project_path"
+    mkdir -p "$project_path"
+    cd "$project_path"
 
-# Run linting and formatting
-lint:
-    pre-commit run --all-files
+    log_info "  -> Creating subdirectories (css, js, images)..."
+    mkdir -p css js images
+
+    log_info "  -> Creating boilerplate files..."
+    cat <<EOF > index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${project_name}</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <h1>Welcome to ${project_name}</h1>
+    <script src="js/script.js"></script>
+</body>
+</html>
 EOF
 
-# --- NEW: Add devcontainer ---
-echo "[4/6] Creating Dev Container config..."
-mkdir -p "$PROJECT_DIR/.devcontainer"
-cat <<EOF >"$PROJECT_DIR/.devcontainer/devcontainer.json"
-{
-  "name": "Web Project",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {}
-  },
-  "forwardPorts": [8000],
-  "postCreateCommand": "npm install -g live-server"
+    touch css/styles.css
+    touch js/script.js
+
+    log_info "  -> Initializing Git repository and making first commit..."
+    git init
+    git add .
+    git commit -m "feat: Initial project structure"
+
+    log_success "Project '$project_name' created successfully."
+
+    # Optional: Open in Neovim if available
+    if command -v nvim &> /dev/null; then
+        log_info "Opening project in Neovim..."
+        nvim .
+    else
+        log_info "Run 'cd $project_path' to get started."
+    fi
 }
-EOF
 
-# --- NEW: Add pre-commit ---
-echo "[5/6] Setting up pre-commit..."
-cp "$REPO_DIR/code_quality/.pre-commit-config.yaml" "$PROJECT_DIR/.pre-commit-config.yaml"
-cd "$PROJECT_DIR"
-git add .
-git commit -m "Initial project structure" >/dev/null
-pre-commit install >/dev/null
-cd - >/dev/null
-
-# 6. Open in Neovim (optional)
-# ... (remains the same) ...
+main "$@"

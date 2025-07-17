@@ -1,62 +1,166 @@
 #!/bin/bash
-# Master setup script for Ubuntu/Debian-based Linux environments.
+#
+# Master setup script for native Ubuntu/Debian-based Linux environments.
+# This script orchestrates the entire setup process, is idempotent,
+# and provides clear feedback to the user.
 
-set -e
-echo "--- Starting Master Linux Environment Setup ---"
+# A more robust shell script header
+set -euo pipefail
 
-# --- Ensure Script is Run from Repo Root ---
-if [ ! -d "./setup_scripts" ] || [ ! -d "./install_routines" ]; then
-    echo "[Error] Please run this script from the root of the repository." >&2
-    exit 1
-fi
-REPO_ROOT_DIR=$(pwd)
-INSTALL_ROUTINES_DIR="$REPO_ROOT_DIR/install_routines"
+# --- Script Configuration and Path Management ---
+# Use the script's own location to reliably determine the repository root.
+# This makes the script runnable from any directory.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." &>/dev/null && pwd)"
+INSTALL_ROUTINES_DIR="$REPO_ROOT/Linux_Experimental/install_routines"
 
-# --- PHASE 1: Install Core System Dependencies ---
-echo "[PHASE 1] Installing core dependencies via apt..."
-sudo apt-get update
-# libfuse2 is for AppImage support, lolcat is for the welcome message
-sudo apt-get install -y git curl wget build-essential ca-certificates tar python3 python3-pip python3-venv figlet fzf ripgrep fd-find unzip nodejs npm libfuse2 lolcat
-echo "Core dependencies installed."
-echo ""
+# --- Helper Functions for Logging ---
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
+log_error() { echo -e "\033[1;31m[ERROR]\033[0m $1" >&2; exit 1; }
 
-# --- PHASE 2: Run Individual Software Installers ---
-echo "[PHASE 2] Executing all installation routines from $INSTALL_ROUTINES_DIR..."
-# This loop ensures every installer script in the directory is executed.
-for installer in "$INSTALL_ROUTINES_DIR"/*.sh; do
-    if [ -f "$installer" ]; then
-        echo ""
-        echo "--- Running installer: $(basename "$installer") ---"
-        bash "$installer"
+# --- Sudo Privilege Check ---
+check_sudo() {
+    log_info "Checking for sudo privileges..."
+    if ! sudo -v; then
+        log_error "Sudo privileges are required to proceed. Aborting."
     fi
-done
-echo "All installation routines completed."
-echo ""
+    # Keep sudo privileges alive throughout the script execution.
+    sudo -v
+    log_success "Sudo privileges confirmed."
+}
 
-# --- PHASE 3: Set up User Config Files ---
-echo "[PHASE 3] Setting up user configuration files..."
-bash "$REPO_ROOT_DIR/setup_scripts/install_configs.sh"
-echo "User configurations set up."
-echo ""
+# --- Main Setup Functions ---
 
-# --- PHASE 4: Link All Configurations & Scripts ---
-echo "[PHASE 4] Linking all dotfiles and configurations..."
-# The install_links.sh script now handles sourcing automatically.
-bash "$REPO_ROOT_DIR/setup_scripts/install_links.sh"
-echo "Dotfiles linked."
-echo ""
+set_script_permissions() {
+    log_info "--- PREP: Setting execute permissions for all setup scripts ---"
+    
+    # Set permissions for scripts in the setup_scripts directory
+    for script in "$SCRIPT_DIR"/*.sh; do
+        if [ -f "$script" ]; then
+            chmod +x "$script"
+        fi
+    done
 
-# --- PHASE 5: Finalize Neovim Setup ---
-echo "[PHASE 5] Running final Neovim bootstrapping..."
-# We still run this to install Mason tools and sync plugins for AstroNvim
-bash "$REPO_ROOT_DIR/setup_scripts/finalize_neovim.sh"
-echo "Neovim finalization complete."
-echo ""
+    # Set permissions for all modular installation routines
+    if [ -d "$INSTALL_ROUTINES_DIR" ]; then
+        for installer in "$INSTALL_ROUTINES_DIR"/*.sh; do
+            if [ -f "$installer" ]; then
+                chmod +x "$installer"
+            fi
+        done
+    fi
+    log_success "All necessary scripts are now executable."
+}
 
+install_core_dependencies() {
+    log_info "--- PHASE 1: Installing Core Dependencies ---"
+    sudo apt-get update
+    
+    # List of packages is broken into multiple lines for readability.
+    sudo apt-get install -y \
+        build-essential \
+        ca-certificates \
+        curl \
+        docker.io \
+        docker-compose \
+        fd-find \
+        figlet \
+        fzf \
+        git \
+        jq \
+        libfuse2 \
+        lolcat \
+        nodejs \
+        npm \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ripgrep \
+        tar \
+        unzip \
+        wget
 
-# --- Finish ---
-echo "-------------------------------------------------"
-echo "✅ Master Linux Setup Complete!"
-echo "Please RESTART YOUR TERMINAL for all changes to take effect."
-echo "-------------------------------------------------"
-exit 0
+    # Create 'fd' symlink if needed (for Debian/Ubuntu where binary is 'fdfind').
+    if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
+        log_info "Creating 'fd' symlink for 'fdfind'."
+        sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
+    fi
+    log_success "Core dependencies installed."
+}
+
+run_install_routines() {
+    log_info "--- PHASE 2: Executing Modular Installation Routines ---"
+    if [ ! -d "$INSTALL_ROUTINES_DIR" ]; then
+        log_info "No install_routines directory found, skipping."
+        return
+    fi
+
+    # Now that scripts are executable, run them directly.
+    for installer in "$INSTALL_ROUTINES_DIR"/*.sh; do
+        if [ -f "$installer" ]; then
+            log_info "--> Running installer: $(basename "$installer")"
+            "$installer"
+        fi
+    done
+    log_success "All installation routines completed."
+}
+
+setup_user_configs() {
+    log_info "--- PHASE 3: Setting Up User Configuration Files ---"
+    "$SCRIPT_DIR/install_configs.sh"
+    log_success "User configurations set up."
+}
+
+link_configurations() {
+    log_info "--- PHASE 4: Linking All Dotfiles & Scripts ---"
+    "$SCRIPT_DIR/install_links.sh"
+    log_success "Dotfiles linked."
+}
+
+finalize_neovim() {
+    log_info "--- PHASE 5: Finalizing Neovim Setup ---"
+    # The chmod command is no longer needed here as it's handled by set_script_permissions
+    "$SCRIPT_DIR/finalize_neovim.sh"
+    log_success "Neovim finalization complete."
+}
+
+source_in_bashrc() {
+    log_info "--- PHASE 6: Ensuring Shell Configuration is Loaded ---"
+    local line_to_add="if [ -f ~/.bashrc_config ]; then . ~/.bashrc_config; fi"
+    
+    # Ensure the line is present in .bashrc for the new config to take effect.
+    if grep -qFx -- "$line_to_add" ~/.bashrc; then
+        log_info "Sourcing line already exists in ~/.bashrc. No action needed."
+    else
+        log_info "Adding sourcing line to ~/.bashrc for automation."
+        echo "" >> ~/.bashrc
+        echo "# Load custom shell functions and aliases from my_linux_setup" >> ~/.bashrc
+        echo "$line_to_add" >> ~/.bashrc
+        log_success "Sourcing line added to ~/.bashrc."
+    fi
+}
+
+# --- Script Execution Orchestrator ---
+main() {
+    log_info "--- Starting Master Linux Environment Setup ---"
+    
+    check_sudo
+    set_script_permissions
+    install_core_dependencies
+    run_install_routines
+    setup_user_configs
+    link_configurations
+    finalize_neovim
+    source_in_bashrc
+
+    echo
+    log_success "-------------------------------------------------"
+    log_success "✅ Master Linux Setup Complete!"
+    log_info "Please RESTART YOUR TERMINAL for all changes to take effect."
+    log_success "-------------------------------------------------"
+    exit 0
+}
+
+# Run the main function
+main

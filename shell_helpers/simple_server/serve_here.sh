@@ -1,57 +1,84 @@
 #!/bin/bash
-# Starts a simple Python HTTP server in the current directory.
-# Version 2.0: Reads default port from an optional config file.
+#
+# serve_here - A convenient wrapper script to start a simple Python HTTP
+# server in the current directory, making it accessible on the local network.
 
-# --- Help Function ---
-show_help() {
-    echo "Starts a simple Python HTTP server in the current directory."
-    echo "Usage: serve_here [port]"
-    echo "For detailed instructions, see the README.md in the simple_server project."
+set -euo pipefail
+
+# --- Configuration & Helper Functions ---
+CONFIG_FILE="$HOME/.config/simple_server/config"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+fi
+
+# Set a default port if not defined in the config.
+DEFAULT_PORT="${DEFAULT_PORT:-8000}"
+
+log_info() { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
+log_error() { echo -e "\033[1;31m[ERROR]\033[0m $1" >&2; exit 1; }
+
+# --- Usage and Help ---
+usage() {
+    cat <<EOF
+Usage: serve_here [port]
+Starts a simple Python HTTP server in the current directory.
+
+Arguments:
+  [port]          The port to listen on. Defaults to ${DEFAULT_PORT} or the value
+                  in ~/.config/simple_server/config.
+EOF
+    exit 0
 }
 
 # --- Argument Parsing ---
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    show_help
-    exit 0
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    usage
 fi
 
-# --- Configuration ---
-# Define a default port.
-DEFAULT_PORT=8000
+# --- Main Logic ---
+main() {
+    # Check for the Python dependency.
+    if ! command -v python3 &>/dev/null; then
+        log_error "python3 is not installed, which is required to run the server."
+    fi
 
-# Define path to user's private config file.
-USER_CONFIG_FILE="$HOME/.config/simple_server/config"
+    local port="${1:-$DEFAULT_PORT}"
 
-# If the user's config file exists, source it to override the default.
-if [ -f "$USER_CONFIG_FILE" ]; then
-    source "$USER_CONFIG_FILE"
-fi
+    # Validate that the port is a number.
+    if ! [[ "$port" =~ ^[0-9]+$ ]]; then
+        log_error "Invalid port: '$port'. Port must be a number."
+    fi
 
-# Use the first command-line argument as the port, or the configured default.
-PORT="${1:-$DEFAULT_PORT}"
+    # Function to get the primary non-localhost IP address.
+    # Uses 'ip' command, which is standard on modern Linux systems.
+    get_lan_ip() {
+        ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1" | head -n 1
+    }
 
-# --- Dependency Check ---
-if ! command -v python3 &>/dev/null; then
-    echo "Error: python3 command not found." >&2
-    exit 1
-fi
+    local lan_ip
+    lan_ip=$(get_lan_ip)
 
-# --- Start Server ---
-# Try to get primary non-localhost IP address(es) for convenience
-IP_ADDRS=$(hostname -I 2>/dev/null | awk '{for(i=1;i<=NF;i++) if ($i != "127.0.0.1") printf "%s ", $i}')
+    log_success "Starting Python HTTP server..."
+    echo "----------------------------------------------------"
+    log_info "Serving files from: $(pwd)"
+    echo
+    log_info "Access URLs:"
+    echo "  - From this machine:   http://localhost:$port"
+    if [ -n "$lan_ip" ]; then
+        echo "  - From your network:   http://$lan_ip:$port"
+    else
+        echo "  (Could not determine network IP address)"
+    fi
+    echo "----------------------------------------------------"
+    echo "Press Ctrl+C to stop the server."
 
-echo "Serving files from directory: $(pwd)"
-echo "Access locally at    : http://localhost:$PORT"
-if [ -n "$IP_ADDRS" ]; then
-    for ip in $IP_ADDRS; do
-        echo "Access on network at : http://$ip:$PORT"
-    done
-fi
-echo "Press Ctrl+C to stop the server."
-echo "---"
+    # Start the server, binding to all interfaces (0.0.0.0) to make it
+    # accessible from the local network.
+    if ! python3 -m http.server "$port" --bind 0.0.0.0; then
+        log_error "Failed to start the server. The port may be in use."
+    fi
+}
 
-# Start the server, binding to all interfaces (0.0.0.0)
-python3 -m http.server "$PORT" --bind 0.0.0.0
-
-echo ""
-echo "Server stopped."
+# Pass all script arguments to the main function.
+main "$@"
