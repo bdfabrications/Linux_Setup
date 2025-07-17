@@ -1,5 +1,5 @@
 # Configuration file for the ollama_chat helper script.
-# To use, copy to ~/.config/ollama_helper/config and edit the model name.
+# To use, copy to ~/.config/ollama_chat/config and edit the model name.
 
 # Sets the default model to use when no model is specified on the command line.
 # Example: DEFAULT_MODEL="phi3"

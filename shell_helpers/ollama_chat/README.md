@@ -19,13 +19,13 @@ To change the default chat model from `llama3:8b`, you can create a custom confi
 
 1.  Create the configuration directory:
     ```bash
-    mkdir -p ~/.config/ollama_helper
+    mkdir -p ~/.config/ollama_chat
     ```
 2.  Copy the example template to that directory:
     ```bash
-    cp config.example ~/.config/ollama_helper/config
+    cp config.example ~/.config/ollama_chat/config
     ```
-3.  Edit `~/.config/ollama_helper/config` and set your preferred default model.
+3.  Edit `~/.config/ollama_chat/config` and set your preferred default model.
 
 ## Usage
 
@@ -40,3 +40,4 @@ ollama_chat phi3
 ollama_chat mistral:7b-instruct-q4_K_M
 To exit the chat, type /bye or press Ctrl+D
 ```
+
