@@ -30,6 +30,7 @@ bash "$INSTALL_ROUTINES_DIR/25_astronvim.sh"
 bash "$INSTALL_ROUTINES_DIR/30_ollama.sh"
 bash "$INSTALL_ROUTINES_DIR/40_docker.sh"
 # --- NEW: Add new installers ---
+bash "$INSTALL_ROUTINES_DIR/45_pipx.sh"
 bash "$INSTALL_ROUTINES_DIR/50_pre-commit.sh"
 bash "$INSTALL_ROUTINES_DIR/60_just.sh"
 bash "$INSTALL_ROUTINES_DIR/70_terminal_enhancements.sh"
