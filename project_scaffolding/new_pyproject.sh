@@ -24,6 +24,7 @@ fi
 PROJECTS_BASE_DIR="$HOME/projects"
 USER_CONFIG_FILE="$HOME/.config/project_scaffolding/config"
 if [ -f "$USER_CONFIG_FILE" ]; then
+    # shellcheck disable=SC1090
     source "$USER_CONFIG_FILE"
 fi
 
@@ -67,11 +68,12 @@ EOF
 # --- NEW: Add pre-commit ---
 echo "[5/5] Setting up pre-commit..."
 cp "$REPO_DIR/code_quality/.pre-commit-config.yaml" "$PROJECT_DIR/.pre-commit-config.yaml"
-cd "$PROJECT_DIR"
-git add .
-git commit -m "Initial project structure with pre-commit and justfile" >/dev/null
-pre-commit install >/dev/null
-cd - >/dev/null
+( # Use a subshell to avoid changing the current directory permanently
+  cd "$PROJECT_DIR" || exit
+  git add .
+  git commit -m "Initial project structure with pre-commit and justfile" >/dev/null
+  pre-commit install >/dev/null
+)
 
 echo ""
 echo "--- Project '$PROJECT_NAME' created successfully ---"

@@ -92,10 +92,7 @@ echo ""
 # The trailing slash on $SOURCE_DIR/ is important!
 # It tells rsync to copy the *contents* of the source directory,
 # not the directory itself.
-rsync -avh --delete --stats "$SOURCE_DIR/" "$DEST_DIR/"
-
-# Check the exit code of the rsync command.
-if [ $? -eq 0 ]; then
+if rsync -avh --delete --stats "$SOURCE_DIR/" "$DEST_DIR/"; then
   echo ""
   echo "Synchronization completed successfully!"
 else

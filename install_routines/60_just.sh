@@ -11,6 +11,7 @@ if ! command -v cargo &>/dev/null; then
     # The -y flag automates the rustup installation
     curl https://sh.rustup.rs -sSf | sh -s -- -y
     # Add cargo to the current session's PATH
+    # shellcheck disable=SC1091
     source "$HOME/.cargo/env"
     echo "Rust toolchain installed successfully."
 else

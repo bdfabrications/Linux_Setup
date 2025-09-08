@@ -109,11 +109,11 @@ main() {
   echo ""
   echo "--- Create a New Reminder (using systemd) ---"
 
-  read -p "Enter your email address (for notification): " NOTIFY_EMAIL
-  read -p "Reminder Title: " REMINDER_TITLE
-  read -p "Reminder Description: " REMINDER_DESC
-  read -p "Reminder Date (YYYY-MM-DD): " REMINDER_DATE
-  read -p "Reminder Time (HH:MM, 24-hour format): " REMINDER_TIME
+  read -r -p "Enter your email address (for notification): " NOTIFY_EMAIL
+  read -r -p "Reminder Title: " REMINDER_TITLE
+  read -r -p "Reminder Description: " REMINDER_DESC
+  read -r -p "Reminder Date (YYYY-MM-DD): " REMINDER_DATE
+  read -r -p "Reminder Time (HH:MM, 24-hour format): " REMINDER_TIME
 
   # --- Input Validation ---
   if [[ -z "$REMINDER_TITLE" ]]; then
@@ -140,7 +140,7 @@ main() {
   # --- Create systemd unit files ---
   local safe_title
   safe_title=$(echo "$REMINDER_TITLE" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-  local unit_name="reminder-${safe_title}-$(date +%s)"
+  local unit_name; unit_name="reminder-${safe_title}-$(date +%s)"
   local service_file="$HOME/.config/systemd/user/${unit_name}.service"
   local timer_file="$HOME/.config/systemd/user/${unit_name}.timer"
   local exec_script_file="$HOME/.config/systemd/user/${unit_name}-exec.sh"
@@ -160,7 +160,7 @@ main() {
   echo "  - Timer:   $timer_file"
   echo "  - Script:  $exec_script_file"
   echo "---------------"
-  read -p "Is this correct? [y/N] " confirm
+  read -r -p "Is this correct? [y/N] " confirm
 
   if [[ ! "$confirm" =~ ^[yY](es)?$ ]]; then
     echo "Aborted. No reminder was set."
@@ -168,14 +168,14 @@ main() {
   fi
 
   # FIXED: Escape variables to handle special characters (quotes, spaces, etc.) safely.
-  local E_API_KEY=$(printf %q "$API_KEY")
-  local E_REMINDER_TITLE=$(printf %q "$REMINDER_TITLE")
-  local E_REMINDER_DESC=$(printf %q "$REMINDER_DESC")
-  local E_NOTIFY_EMAIL=$(printf %q "$NOTIFY_EMAIL")
-  local E_SENDER_NAME=$(printf %q "$SENDER_NAME")
-  local E_SENDER_EMAIL=$(printf %q "$SENDER_EMAIL")
-  local E_REMINDER_DATE=$(printf %q "$REMINDER_DATE")
-  local E_REMINDER_TIME=$(printf %q "$REMINDER_TIME")
+  local E_API_KEY; E_API_KEY=$(printf %q "$API_KEY")
+  local E_REMINDER_TITLE; E_REMINDER_TITLE=$(printf %q "$REMINDER_TITLE")
+  local E_REMINDER_DESC; E_REMINDER_DESC=$(printf %q "$REMINDER_DESC")
+  local E_NOTIFY_EMAIL; E_NOTIFY_EMAIL=$(printf %q "$NOTIFY_EMAIL")
+  local E_SENDER_NAME; E_SENDER_NAME=$(printf %q "$SENDER_NAME")
+  local E_SENDER_EMAIL; E_SENDER_EMAIL=$(printf %q "$SENDER_EMAIL")
+  local E_REMINDER_DATE; E_REMINDER_DATE=$(printf %q "$REMINDER_DATE")
+  local E_REMINDER_TIME; E_REMINDER_TIME=$(printf %q "$REMINDER_TIME")
 
   # --- Create the Execution Script ---
   # This script is called by the systemd service. It now uses pre-escaped variables.
@@ -197,7 +197,7 @@ REMINDER_TIME=${E_REMINDER_TIME}
 # This is now safe from special characters.
 if command -v notify-send &>/dev/null; then
     # Try to find the user's graphical session for notifications
-    export DISPLAY=\$(grep -z DISPLAY /proc/\$(pgrep -u \$USER gnome-shell | head -n 1)/environ | tr -d '\\0' | sed 's/DISPLAY=//')
+    export DISPLAY=\$(grep -z DISPLAY /proc/\$(pgrep -u \$USER gnome-shell | head -n 1)/environ | tr -d '\0' | sed 's/DISPLAY=//')
     if [[ -n \$DISPLAY ]]; then
         /usr/bin/notify-send -u critical "\$REMINDER_TITLE" "\$REMINDER_DESC"
     fi
@@ -216,11 +216,11 @@ JSON_PAYLOAD=\$(printf '{
 
 # IMPROVED: Send email with better error handling. Logs to systemd journal on failure.
 echo "Sending reminder email for '\${REMINDER_TITLE}'..."
-API_RESPONSE=\$(curl --request POST \\
-  --url https://api.brevo.com/v3/smtp/email \\
-  --header "accept: application/json" \\
-  --header "api-key: \$API_KEY" \\
-  --header "content-type: application/json" \\
+API_RESPONSE=\$(curl --request POST \
+  --url https://api.brevo.com/v3/smtp/email \
+  --header "accept: application/json" \
+  --header "api-key: \$API_KEY" \
+  --header "content-type: application/json" \
   --data "\$JSON_PAYLOAD" --silent --show-error --write-out "HTTP_STATUS:%{http_code}")
 
 if [[ "\$API_RESPONSE" =~ HTTP_STATUS:2[0-9]{2}$ ]]; then
@@ -270,9 +270,7 @@ EOF
   echo ""
   echo "--- Activating Reminder ---"
   systemctl --user daemon-reload
-  systemctl --user enable --now "${unit_name}.timer"
-
-  if [ $? -eq 0 ]; then
+  if systemctl --user enable --now "${unit_name}.timer"; then
     # Disable the trap so it doesn't delete the files on normal exit
     trap - SIGHUP SIGINT SIGTERM
     echo "Reminder successfully set and enabled!"

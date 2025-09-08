@@ -89,7 +89,7 @@ CURL_CMD=$(command -v curl)
 
 # 1. Display ASCII Art Banner (uses FIGLET_TEXT variable)
 if [ -x "$FIGLET_CMD" ]; then
-    $FIGLET_CMD "$FIGLET_TEXT"
+    $FIGLET_CMD "$FIGLET_TEXT" | lolcat
 else
     echo "============================="
     echo "        $FIGLET_TEXT"
@@ -106,11 +106,11 @@ if [ "$CURRENT_HOUR" -ge 5 ] && [ "$CURRENT_HOUR" -lt 12 ]; then
 elif [ "$CURRENT_HOUR" -ge 12 ] && [ "$CURRENT_HOUR" -lt 18 ]; then
     GREETING="Good afternoon"
 fi
-echo "$GREETING, $USERNAME!"
+echo "$GREETING, $USERNAME!" | lolcat
 echo ""
 
 # 3. Display Weather (uses LOCATION variable)
-echo "* Weather Info:"
+echo "* Weather Info:" | lolcat
 if [ -x "$CURL_CMD" ]; then
     weather=$(curl -s --connect-timeout 5 --max-time 10 "wttr.in/$LOCATION?format=3")
     if [ $? -eq 0 ] && [ -n "$weather" ]; then
@@ -126,7 +126,7 @@ echo ""
 # --- Handy Command Reference ---
 # This message is displayed each time a new terminal opens.
 echo "---"
-echo "Quick Command Reference:"
+echo "Quick Command Reference:" | lolcat
 echo "  p                     - Interactively select a project to open."
 echo "  my_help               - Fuzzy find all custom commands."
 echo "---"

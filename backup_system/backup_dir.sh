@@ -30,6 +30,7 @@ USER_CONFIG_FILE="$HOME/.config/backup_system/config"
 
 # If the user's config file exists, source it to override the default.
 if [ -f "$USER_CONFIG_FILE" ]; then
+  # shellcheck disable=SC1090
   source "$USER_CONFIG_FILE"
 fi
 
@@ -41,8 +42,7 @@ fi
 
 if [ ! -d "$BACKUP_DEST_DIR" ]; then
   echo "Info: Backup destination '$BACKUP_DEST_DIR' not found. Creating it..."
-  mkdir -p "$BACKUP_DEST_DIR"
-  if [ $? -ne 0 ]; then
+  if ! mkdir -p "$BACKUP_DEST_DIR"; then
     echo "Error: Failed to create backup directory '$BACKUP_DEST_DIR'."
     exit 1
   fi
