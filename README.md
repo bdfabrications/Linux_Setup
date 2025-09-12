@@ -1,93 +1,166 @@
-My Linux Setup
+# My Linux Setup
 
-This repository is my personal collection of dotfiles, configurations, and utility scripts for creating a complete, modern, and productive development environment on Linux, centered around the powerful AstroNvim configuration.
+**One-command setup for a complete, modern Linux development environment.**
 
-The entire setup is designed to be modular, portable, and easily deployed on a new machine with a single command, whether it's a native Linux installation or a WSL instance.
-Core Philosophy
+This repository provides a fully automated setup script that transforms a fresh Linux installation into a powerful, aesthetically pleasing, and highly productive development environment with a single command.
 
-    Modular: Every script and configuration is organized into its own self-contained project directory with its own documentation.
+## 🚀 Quick Start
 
-    Configurable: Scripts with user-specific settings (like API keys or default paths) read their values from private configuration files located in ~/.config/. The main setup script automatically deploys the necessary templates.
+### Option 1: One-Command Remote Install (Recommended)
+```bash
+curl -fsSL https://raw.githubusercontent.com/bdfabrications/Linux_Setup/main/setup.sh | bash
+```
 
-    Fully Automated: The primary goal is to bootstrap a new machine from zero to a fully configured, aesthetically pleasing, and highly productive development environment with a single command.
+### Option 2: Clone and Run Locally
+```bash
+git clone https://github.com/bdfabrications/Linux_Setup.git
+cd Linux_Setup
+./setup.sh
+```
 
-Prerequisites
+**That's it!** After the script completes:
+1. Restart your terminal
+2. Everything is ready to use
 
-This setup is designed for Debian-based Linux distributions (like Ubuntu or Debian) and requires sudo privileges to run.
+## ✨ What Gets Installed
 
-The setup scripts will automatically install all necessary tools and dependencies. The core requirements that will be installed are:
+### Core Development Tools
+- **Build essentials**: git, curl, wget, build-essential, ca-certificates
+- **Programming runtimes**: Python 3, Node.js, Rust toolchain
+- **Command-line utilities**: fzf, ripgrep, fd-find, eza, zoxide, just, jq
 
-    Essential Build Tools: build-essential, git, curl, wget, ca-certificates, tar
+### Applications & Services
+- **Neovim v0.11.2** with **AstroNvim** configuration
+- **Docker** with user group setup
+- **Ollama** for local AI models
+- **Oh My Posh** for beautiful shell prompts
+- **1Password CLI** for secure credential management
 
-    Programming Runtimes: python3, python3-pip, python3-venv, nodejs, npm, and the rust toolchain (via rustup)
+### Development Tools
+- **pipx** for Python CLI application management
+- **pre-commit** for code quality hooks
+- Custom shell aliases and functions
+- Automated backup and project scaffolding scripts
 
-    Command-Line Utilities: fzf, ripgrep, fd-find, unzip, jq, figlet, eza, zoxide
+### Personal Configurations
+All your custom dotfiles, shell configurations, and utility scripts are automatically symlinked and ready to use.
 
-    Key Applications: Neovim, Docker, Oh My Posh, 1Password CLI, and Ollama.
+## 🖥️ System Compatibility
 
-The script is idempotent, meaning it can be run multiple times without causing issues. It will check if a dependency is already installed before attempting to install it.
-Quick Start: Fresh Installation
+- **Primary**: Ubuntu 20.04+ / Debian 11+
+- **Also supports**: Any Debian-based distribution
+- **WSL**: Fully supported (both WSL 1 and WSL 2)
+- **Requirements**: `sudo` privileges for package installation
 
-These setup scripts are designed to be run once on a new system to install all dependencies, tools, and configurations.
+The script automatically detects WSL environments and adapts accordingly.
 
-    Warning: These scripts will install numerous packages and require sudo privileges. Review their contents before running on a critical system.
+## 🔧 Features
 
-1. Clone the Repository
+### Fully Automated
+- **Zero manual intervention** required
+- **Idempotent**: Safe to run multiple times
+- **Robust error handling** with detailed logging
+- **Smart prerequisite detection** and installation
 
-git clone [https://github.com/bdfabrications/my_linux_setup.git](https://github.com/bdfabrications/my_linux_setup.git)
-cd my_linux_setup
+### Modular Architecture
+Each tool has its own installation logic that checks if it's already installed before proceeding, making the script efficient and safe to re-run.
 
-2. Run the Appropriate Installer
+### Comprehensive Logging
+All installation steps are logged to `/tmp/linux_setup_YYYYMMDD_HHMMSS.log` for troubleshooting.
 
-For Native Linux (Specifically APT-based distributions)
-This script is optimized for a fresh Debian/Ubuntu instance.
+## 📁 Project Structure
 
-chmod +x setup_scripts/setup_linux.sh
-./setup_scripts/setup_linux.sh
+After installation, you'll have access to these custom utilities:
 
-For WSL (Debian/Ubuntu-based)
-This script is optimized for a fresh WSL instance.
+| Command | Description |
+|---------|-------------|
+| `remind_me` | Systemd-based reminder system with email notifications |
+| `backup_dir` / `sync_backup` | Full and incremental backup utilities |
+| `update_system` | System maintenance and package updates |
+| `new_pyproject` / `new_webproject` | Project scaffolding tools |
+| `rgf` | Enhanced ripgrep search wrapper |
+| `serve_here` | Instant HTTP server for current directory |
+| `ollama_chat` | Interactive chat interface for Ollama models |
 
-chmod +x setup_scripts/setup_wsl.sh
-./setup_scripts/setup_wsl.sh
+## ⚙️ Customization
 
-3. Restart Your Shell
+Configuration files are automatically created in `~/.config/` from templates:
 
-After the setup script completes, you must close and restart your terminal for all changes, themes, and commands to take effect. The first time you run nvim, AstroNvim will finalize its plugin installation.
-Project Portfolio
+- `~/.config/backup_system/config` - Backup destinations and settings
+- `~/.config/remind_me/config` - Email and notification settings  
+- `~/.config/ollama_helper/config` - Default AI model preferences
+- `~/.config/project_scaffolding/config` - Default project templates
+- And more...
 
-This repository is organized into the following projects. Click into any directory to see its specific README.md for more details.
+Edit these files to customize the behavior of your tools.
 
-    astronvim/: Your personalized AstroNvim configuration, providing a rich, modern, and beautiful Neovim IDE experience.
+## 🔍 What's Different in This Version
 
-    setup_scripts/: The core installer scripts for bootstrapping a new machine.
+This is a completely refactored version focused on simplicity and automation:
 
-    shell_config/: Contains the main bash_aliases and bashrc_config files that define custom functions and the welcome message.
+### ✅ New Features
+- **Single script installation** - no more multiple setup scripts
+- **Remote installation support** - run directly from GitHub
+- **Comprehensive prerequisite handling** - installs everything needed
+- **Better error handling and logging**
+- **WSL auto-detection and optimization**
+- **Idempotent operation** - safe to run multiple times
 
-    shell_theming/: Holds all theme files for Oh My Posh.
+### 🗑️ Removed
+- Multiple separate setup scripts (`setup_linux.sh`, `setup_wsl.sh`)
+- Manual prerequisite installation steps
+- Complex multi-phase installation process
+- All Gemini-related configurations (none were found)
 
-    remind_me/: A powerful reminder tool that uses systemd timers and email notifications.
+### 🔄 Preserved
+- **All personal configurations and dotfiles** remain unchanged
+- Custom shell aliases and functions
+- AstroNvim configuration
+- All utility scripts and tools
+- Oh My Posh themes
 
-    backup_system/: A set of scripts for creating full (.tar.gz) and incremental (rsync) backups.
+## 🧪 Testing
 
-    project_scaffolding/: Helper scripts (new_pyproject, new_webproject) to quickly create boilerplate for new projects.
+To test the script in a safe environment:
 
-    shell_helpers/: A collection of useful command-line utilities.
+```bash
+# In a Docker container
+docker run -it ubuntu:22.04 bash
+apt update && apt install -y curl sudo
+curl -fsSL https://raw.githubusercontent.com/bdfabrications/Linux_Setup/main/setup.sh | bash
+```
 
-        ollama_chat: An interactive chat wrapper for Ollama models.
+## 📋 Prerequisites Installed Automatically
 
-        rgf_helper: A convenient wrapper for ripgrep searches.
+The script will install these prerequisites if they're missing:
 
-        simple_server: A script to instantly start a Python HTTP server.
+**Essential tools**: curl, git, sudo, build-essential, ca-certificates, tar, wget  
+**Python ecosystem**: python3, python3-pip, python3-venv, pipx  
+**Node.js ecosystem**: nodejs, npm  
+**Rust toolchain**: rustc, cargo (via rustup)  
+**Command-line utilities**: fzf, ripgrep, fd-find, unzip, jq, figlet, lolcat  
+**System libraries**: libfuse2 (for AppImage support)
 
-    system_manager/: Contains the update_system script for easy system maintenance on Debian/APT systems.
+## 🛠️ Troubleshooting
 
-Customization
+### Installation Issues
+- Check the log file (path shown during installation)
+- Ensure you have `sudo` privileges
+- Verify internet connection for package downloads
 
-All projects that require user-specific settings are now handled automatically by the main setup script. It will create the necessary directories in ~/.config/ and copy the required config.example templates for you.
+### Post-Installation
+- If commands aren't found, restart your terminal
+- For Docker issues on WSL, restart your WSL session
+- Configuration templates are in `~/.config/*/config`
 
-To customize, simply edit the files in your ~/.config/ directory after running the main setup.
+## 🤝 Contributing
 
-Feel free to contribute or customize this setup for your own use! If you have any questions or issues, please open an issue on the GitHub repository.
+Feel free to fork this repository and customize it for your needs! If you find bugs or have suggestions, please open an issue.
 
-Happy coding!
+## 📄 License
+
+This project is open source. Use it, modify it, share it!
+
+---
+
+**Happy coding!** 🚀
