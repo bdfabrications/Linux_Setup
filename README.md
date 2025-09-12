@@ -6,12 +6,6 @@ This repository provides a fully automated setup script that transforms a fresh 
 
 ## 🚀 Quick Start
 
-### Option 1: One-Command Remote Install (Recommended)
-```bash
-curl -fsSL https://raw.githubusercontent.com/bdfabrications/Linux_Setup/main/setup.sh | bash
-```
-
-### Option 2: Clone and Run Locally
 ```bash
 git clone https://github.com/bdfabrications/Linux_Setup.git
 cd Linux_Setup
@@ -100,7 +94,6 @@ This is a completely refactored version focused on simplicity and automation:
 
 ### ✅ New Features
 - **Single script installation** - no more multiple setup scripts
-- **Remote installation support** - run directly from GitHub
 - **Comprehensive prerequisite handling** - installs everything needed
 - **Better error handling and logging**
 - **WSL auto-detection and optimization**
@@ -126,8 +119,10 @@ To test the script in a safe environment:
 ```bash
 # In a Docker container
 docker run -it ubuntu:22.04 bash
-apt update && apt install -y curl sudo
-curl -fsSL https://raw.githubusercontent.com/bdfabrications/Linux_Setup/main/setup.sh | bash
+apt update && apt install -y git sudo
+git clone https://github.com/bdfabrications/Linux_Setup.git
+cd Linux_Setup
+./setup.sh
 ```
 
 ## 📋 Prerequisites Installed Automatically
