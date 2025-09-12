@@ -94,7 +94,6 @@ install_core_dependencies() {
     local core_packages=(
         build-essential git curl wget ca-certificates tar
         python3 python3-pip python3-venv
-        nodejs npm
         figlet fzf ripgrep fd-find unzip jq
         libfuse2  # Required for AppImages
         lolcat    # For colorful output
@@ -229,17 +228,34 @@ install_ollama() {
     log_success "Ollama installed"
 }
 
-install_pipx() {
-    if command_exists pipx; then
-        log_info "pipx already installed, skipping..."
+install_nodejs() {
+    if command_exists node; then
+        log_info "Node.js already installed, skipping..."
         return
     fi
     
-    log_info "Installing pipx..."
-    python3 -m pip install --user pipx
-    python3 -m pipx ensurepath
-    log_success "pipx installed"
+    log_info "Installing Node.js via nvm..."
+    
+    # Install nvm (Node Version Manager)
+    local nvm_version="v0.39.7"
+    local nvm_url="https://raw.githubusercontent.com/nvm-sh/nvm/${nvm_version}/install.sh"
+    
+    # Download and run nvm installer
+    curl -o- "${nvm_url}" | bash
+    
+    # Source nvm to make it available in current session
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    
+    # Install latest LTS version of Node.js
+    nvm install --lts
+    nvm use --lts
+    nvm alias default lts/*
+    
+    log_success "Node.js (LTS) installed via nvm"
 }
+
 
 install_additional_tools() {
     log_info "Installing additional development tools..."
@@ -273,12 +289,6 @@ install_additional_tools() {
         log_success "just installed"
     fi
     
-    # Install pre-commit via pipx
-    if ! command_exists pre-commit; then
-        log_info "Installing pre-commit..."
-        pipx install pre-commit
-        log_success "pre-commit installed"
-    fi
     
     # Install 1Password CLI
     if ! command_exists op; then
@@ -403,11 +413,10 @@ show_completion_message() {
     echo
     log_info "What was installed:"
     log_info "• Core development tools (git, curl, build tools, etc.)"
-    log_info "• Programming runtimes (Python, Node.js, Rust)"
+    log_info "• Programming runtimes (Python, Node.js via nvm, Rust)"
     log_info "• Command-line utilities (fzf, ripgrep, eza, zoxide, just)"
     log_info "• Applications (Neovim with AstroNvim, Docker, Ollama, 1Password CLI)"
     log_info "• Shell enhancements (Oh My Posh, custom aliases and functions)"
-    log_info "• Development tools (pre-commit, pipx)"
     echo
     log_info "Next steps:"
     log_info "1. Restart your terminal or run: source ~/.bashrc"
@@ -443,7 +452,7 @@ main() {
     install_astronvim
     install_docker
     install_ollama
-    install_pipx
+    install_nodejs
     install_additional_tools
     
     # Setup configurations and links
