@@ -111,19 +111,59 @@ install_core_dependencies() {
 }
 
 setup_repository() {
-    local repo_dir="${HOME}/${REPO_NAME}"
+    local repo_dir=""
 
-    if [[ -d "${repo_dir}" ]]; then
-        log_info "Repository already exists, updating..."
-        cd "${repo_dir}"
-        git pull origin main || {
-            log_warning "Failed to update repository, continuing with existing version"
-        }
+    # Check if we're already running from within the repository
+    if [[ -f "${PWD}/setup.sh" && -d "${PWD}/shell_config" ]]; then
+        repo_dir="${PWD}"
+        log_info "Running from existing repository directory: ${repo_dir}"
     else
-        log_info "Cloning repository..."
-        cd "${HOME}"
-        git clone "${REPO_URL}" "${REPO_NAME}"
-        cd "${repo_dir}"
+        # Try to find existing repository in common locations
+        local possible_locations=(
+            "${HOME}/projects/${REPO_NAME}"
+            "${HOME}/${REPO_NAME}"
+            "${HOME}/dev/${REPO_NAME}"
+            "${HOME}/Development/${REPO_NAME}"
+            "${HOME}/code/${REPO_NAME}"
+        )
+
+        for location in "${possible_locations[@]}"; do
+            if [[ -d "${location}" && -f "${location}/setup.sh" ]]; then
+                repo_dir="${location}"
+                log_info "Found existing repository at: ${repo_dir}"
+                cd "${repo_dir}"
+                git pull origin main || {
+                    log_warning "Failed to update repository, continuing with existing version"
+                }
+                break
+            fi
+        done
+
+        # If no existing repository found, clone to preferred location
+        if [[ -z "${repo_dir}" ]]; then
+            # Determine best location for cloning
+            if [[ -d "${HOME}/projects" ]]; then
+                repo_dir="${HOME}/projects/${REPO_NAME}"
+                cd "${HOME}/projects"
+            elif [[ -d "${HOME}/dev" ]]; then
+                repo_dir="${HOME}/dev/${REPO_NAME}"
+                cd "${HOME}/dev"
+            elif [[ -d "${HOME}/Development" ]]; then
+                repo_dir="${HOME}/Development/${REPO_NAME}"
+                cd "${HOME}/Development"
+            elif [[ -d "${HOME}/code" ]]; then
+                repo_dir="${HOME}/code/${REPO_NAME}"
+                cd "${HOME}/code"
+            else
+                # Fall back to home directory
+                repo_dir="${HOME}/${REPO_NAME}"
+                cd "${HOME}"
+            fi
+
+            log_info "Cloning repository to: ${repo_dir}"
+            git clone "${REPO_URL}" "${REPO_NAME}"
+            cd "${repo_dir}"
+        fi
     fi
 
     # Export the repository path for use by install routines
@@ -163,9 +203,6 @@ install_applications() {
     run_install_routine "25_astronvim.sh"
     run_install_routine "30_ollama.sh"
     run_install_routine "40_docker.sh"
-    run_install_routine "45_pipx.sh"
-    run_install_routine "50_pre-commit.sh"
-    run_install_routine "60_just.sh"
     run_install_routine "70_terminal_enhancements.sh"
     run_install_routine "75_tmux_config.sh"
     run_install_routine "80_1password_cli.sh"

@@ -33,9 +33,26 @@ fc-cache -fv
 
 ## 🚀 Quick Start
 
+The setup script automatically detects the repository location and works from anywhere! Choose your preferred installation method:
+
+### Method 1: Clone and Run (Recommended)
 ```bash
 git clone https://github.com/bdfabrications/Linux_Setup.git
 cd Linux_Setup
+./setup.sh
+```
+
+### Method 2: One-Command Remote Installation
+```bash
+curl -fsSL https://raw.githubusercontent.com/bdfabrications/Linux_Setup/main/setup.sh | bash
+```
+
+### Method 3: Choose Your Directory
+The script automatically detects and uses existing development directories:
+```bash
+# Will automatically use ~/projects/, ~/dev/, ~/Development/, or ~/code/ if they exist
+git clone https://github.com/bdfabrications/Linux_Setup.git ~/projects/Linux_Setup
+cd ~/projects/Linux_Setup
 ./setup.sh
 ```
 
@@ -43,6 +60,8 @@ cd Linux_Setup
 1. Restart your terminal
 2. Ensure your terminal is configured to use a Nerd Font
 3. Everything is ready to use
+
+> **🔧 Smart Auto-Detection**: The setup script automatically finds your repository whether you clone it to `~/projects/`, `~/dev/`, `~/Development/`, `~/code/`, or directly to your home directory. Symlinks and configurations will be created correctly regardless of location.
 
 ## ✨ What Gets Installed
 

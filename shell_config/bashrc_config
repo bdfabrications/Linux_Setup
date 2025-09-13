@@ -133,3 +133,8 @@ echo "---"
 
 # --- zoxide hook ---
 eval "$(zoxide init bash)"
+
+# --- Oh My Posh prompt initialization ---
+if command -v oh-my-posh >/dev/null 2>&1; then
+    eval "$(oh-my-posh init bash --config ~/.poshthemes/dracula.omp.json)"
+fi
