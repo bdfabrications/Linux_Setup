@@ -4,6 +4,33 @@
 
 This repository provides a fully automated setup script that transforms a fresh Linux installation into a powerful, aesthetically pleasing, and highly productive development environment with a single command.
 
+## 📋 Prerequisites
+
+Before running the setup script, you **must** install a Nerd Font for proper shell prompt display:
+
+### Install a Nerd Font
+
+**On Ubuntu/Debian:**
+```bash
+# Download and install a Nerd Font (e.g., Hack Nerd Font)
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/Hack.zip
+unzip Hack.zip -d ~/.local/share/fonts/
+fc-cache -fv
+```
+
+**On other systems:**
+1. Visit [Nerd Fonts](https://www.nerdfonts.com/) and download your preferred font
+2. Install it according to your system's font installation method
+3. Configure your terminal to use the Nerd Font
+
+**Popular Nerd Font choices:**
+- Hack Nerd Font (recommended)
+- JetBrains Mono Nerd Font
+- Fira Code Nerd Font
+- Cascadia Code Nerd Font
+
+> **Why is this required?** The custom shell prompts use special icons and symbols that are only available in Nerd Fonts. Without a Nerd Font, you'll see missing characters or squares in your terminal prompt.
+
 ## 🚀 Quick Start
 
 ```bash
@@ -14,7 +41,8 @@ cd Linux_Setup
 
 **That's it!** After the script completes:
 1. Restart your terminal
-2. Everything is ready to use
+2. Ensure your terminal is configured to use a Nerd Font
+3. Everything is ready to use
 
 ## ✨ What Gets Installed
 
