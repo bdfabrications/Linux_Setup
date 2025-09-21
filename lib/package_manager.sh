@@ -352,10 +352,13 @@ get_package_name() {
         dnf|yum)
             case "$generic_name" in
                 "build-essential") echo "@development-tools" ;;
+                "development-tools") echo "@'Development Tools'" ;;  # Use proper group name with quotes
                 "python3-dev") echo "python3-devel" ;;
                 "python3-venv") echo "python3-devel" ;;  # python3-venv functionality is included in python3-devel on RHEL
                 "libssl-dev") echo "openssl-devel" ;;
                 "fd-find") echo "fd-find" ;;
+                "fd") echo "fd-find" ;;  # fd package is named fd-find on RHEL
+                "figlet") echo "" ;;  # figlet not available in base RHEL repos, will be skipped
                 "g++") echo "gcc-c++" ;;
                 "pkg-config") echo "pkgconfig" ;;
                 "docker.io") echo "docker-ce" ;;
