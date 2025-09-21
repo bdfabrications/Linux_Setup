@@ -18,6 +18,22 @@ unzip Hack.zip -d ~/.local/share/fonts/
 fc-cache -fv
 ```
 
+**On RHEL/CentOS/Rocky Linux/Fedora:**
+```bash
+# Download and install a Nerd Font (e.g., Hack Nerd Font)
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/Hack.zip
+unzip Hack.zip -d ~/.local/share/fonts/
+fc-cache -fv
+```
+
+**On openSUSE:**
+```bash
+# Download and install a Nerd Font (e.g., Hack Nerd Font)
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/Hack.zip
+unzip Hack.zip -d ~/.local/share/fonts/
+fc-cache -fv
+```
+
 **On other systems:**
 1. Visit [Nerd Fonts](https://www.nerdfonts.com/) and download your preferred font
 2. Install it according to your system's font installation method
@@ -37,6 +53,7 @@ The setup script automatically detects the repository location and works from an
 
 ### Method 1: Clone and Run (Recommended)
 ```bash
+# Works on all supported distributions
 git clone https://github.com/bdfabrications/Linux_Setup.git
 cd Linux_Setup
 ./setup.sh
@@ -44,6 +61,7 @@ cd Linux_Setup
 
 ### Method 2: One-Command Remote Installation
 ```bash
+# Universal installation - detects your distribution automatically
 curl -fsSL https://raw.githubusercontent.com/bdfabrications/Linux_Setup/main/setup.sh | bash
 ```
 
@@ -88,12 +106,29 @@ All your custom dotfiles, shell configurations, and utility scripts are automati
 
 ## 🖥️ System Compatibility
 
-- **Primary**: Ubuntu 20.04+ / Debian 11+
-- **Also supports**: Any Debian-based distribution
-- **WSL**: Fully supported (both WSL 1 and WSL 2)
-- **Requirements**: `sudo` privileges for package installation
+### Fully Supported Distributions
+- **Ubuntu 20.04+** - Primary development target
+- **Debian 11+** - Full feature support
+- **RHEL 8+** - Enterprise Linux support
+- **CentOS 8+ / Rocky Linux 8+** - RHEL derivatives
+- **Fedora 35+** - Latest Fedora releases
+- **openSUSE Leap 15.4+** - SUSE Linux support
 
-The script automatically detects WSL environments and adapts accordingly.
+### Additional Support
+- **WSL**: Fully supported (both WSL 1 and WSL 2) on all distributions
+- **AlmaLinux**: Full RHEL-compatible support
+- **Linux Mint**: Debian/Ubuntu derivative support
+
+### Requirements
+- `sudo` privileges for package installation
+- Internet connection for downloading packages and repositories
+- Minimum 2GB available disk space
+
+The script automatically:
+- Detects your Linux distribution and version
+- Uses the appropriate package manager (apt, dnf, yum, zypper)
+- Adapts installation methods for distribution-specific packages
+- Enables EPEL repository on RHEL-based systems when needed
 
 ## 🔧 Features
 
@@ -135,29 +170,51 @@ Configuration files are automatically created in `~/.config/` from templates:
 
 Edit these files to customize the behavior of your tools.
 
-## 🔍 What's Different in This Version
+## 🔍 What's New in This Version
 
-This is a completely refactored version focused on simplicity and automation:
+Major update with **cross-distribution support** for enterprise and certification preparation:
 
 ### ✅ New Features
-- **Single script installation** - no more multiple setup scripts
-- **Comprehensive prerequisite handling** - installs everything needed
-- **Better error handling and logging**
-- **WSL auto-detection and optimization**
-- **Idempotent operation** - safe to run multiple times
+- **Multi-distribution support** - Ubuntu, Debian, RHEL, CentOS, Rocky Linux, Fedora, openSUSE
+- **Intelligent package management** - Automatically uses apt, dnf, yum, or zypper
+- **Distribution detection** - Robust detection using `/etc/os-release` and fallback methods
+- **Package name mapping** - Cross-distribution package compatibility (e.g., `build-essential` ↔ `@development-tools`)
+- **EPEL auto-enablement** - Automatically enables EPEL on RHEL-based systems
+- **Enhanced error handling** - Better logging and distribution-specific error messages
+- **RHEL certification ready** - Perfect for Red Hat certification preparation
+
+### 🔧 Technical Improvements
+- **Modular architecture** - Separate libraries for distribution detection and package management
+- **Backward compatibility** - Existing Debian/Ubuntu installations unaffected
+- **Graceful degradation** - Script continues if optional packages unavailable
+- **Security updates** - Distribution-specific security patch handling
+- **Reboot detection** - Automatically detects when system restart needed
+
+### 📦 Enhanced Installation Support
+- **Docker** - Cross-distribution Docker installation with proper repository setup
+- **1Password CLI** - Multi-distribution support with fallback to direct download
+- **Terminal enhancements** - eza, zoxide, just with GitHub fallback installation
+- **System updates** - Universal system update script works across all distributions
 
 ### 🗑️ Removed
-- Multiple separate setup scripts (`setup_linux.sh`, `setup_wsl.sh`)
-- Manual prerequisite installation steps
-- Complex multi-phase installation process
-- All Gemini-related configurations (none were found)
+- Distribution-specific hardcoded commands
+- Ubuntu/Debian-only assumptions
+- Single package manager dependency
 
 ### 🔄 Preserved
 - **All personal configurations and dotfiles** remain unchanged
-- Custom shell aliases and functions
-- AstroNvim configuration
-- All utility scripts and tools
-- Oh My Posh themes
+- **Existing functionality** on Debian/Ubuntu systems
+- **Custom shell aliases and functions**
+- **AstroNvim configuration**
+- **All utility scripts and tools**
+- **Oh My Posh themes**
+
+### 🎯 Perfect for RHEL Certification
+This setup is now ideal for:
+- **RHCSA/RHCE preparation** - Full RHEL environment setup
+- **Multi-distribution experience** - Learn differences between package managers
+- **Enterprise Linux skills** - Real-world RHEL development environment
+- **Consistent tooling** - Same development tools across all distributions
 
 ## 🧪 Testing
 
@@ -174,30 +231,97 @@ cd Linux_Setup
 
 ## 📋 Prerequisites Installed Automatically
 
-The script will install these prerequisites if they're missing:
+The script automatically detects your distribution and installs the appropriate packages:
 
-**Essential tools**: curl, git, sudo, build-essential, ca-certificates, tar, wget  
-**Python ecosystem**: python3, python3-pip, python3-venv, pipx  
-**Node.js ecosystem**: nodejs, npm  
-**Rust toolchain**: rustc, cargo (via rustup)  
-**Command-line utilities**: fzf, ripgrep, fd-find, unzip, jq, figlet, lolcat  
-**System libraries**: libfuse2 (for AppImage support)
+### Core Development Tools
+**Ubuntu/Debian**: build-essential, git, curl, wget, ca-certificates, tar
+**RHEL/CentOS/Rocky**: @development-tools, git, curl, wget, ca-certificates, tar
+**Fedora**: @development-tools, git, curl, wget, ca-certificates, tar
+**openSUSE**: pattern:devel_basis, git, curl, wget, ca-certificates, tar
+
+### Programming Ecosystems
+**Python**: python3, python3-pip, python3-venv, pipx (all distributions)
+**Node.js**: nodejs, npm via NVM (universal installation method)
+**Rust**: rustc, cargo via rustup (universal installation method)
+
+### Command-line Utilities
+**Universal**: fzf, ripgrep, unzip, jq, figlet, lolcat
+**Distribution-mapped**: fd-find → fd, pkg-config → pkgconfig, etc.
+
+### System Libraries
+**Ubuntu/Debian**: libfuse2 (AppImage support)
+**RHEL-based**: fuse-libs (AppImage support)
+**openSUSE**: fuse (AppImage support)
+
+### Additional Repositories
+**RHEL/CentOS/Rocky**: EPEL repository automatically enabled for additional packages
+**All distributions**: Docker, 1Password CLI, and other third-party repositories added as needed
 
 ## 🛠️ Troubleshooting
 
 ### Installation Issues
-- Check the log file (path shown during installation)
-- Ensure you have `sudo` privileges
-- Verify internet connection for package downloads
+- **Check the log file**: Path shown during installation (e.g., `/tmp/linux_setup_YYYYMMDD_HHMMSS.log`)
+- **Verify privileges**: Ensure you have `sudo` privileges
+- **Check connectivity**: Verify internet connection for package downloads
+- **Distribution support**: Confirm your distribution is supported (script will warn if not)
+
+### Distribution-Specific Issues
+
+#### RHEL/CentOS/Rocky Linux
+- **EPEL repository**: Script automatically enables EPEL for additional packages
+- **Subscription**: RHEL may require active subscription for some packages
+- **SELinux**: Some applications (like Docker) may need SELinux configuration
+
+#### Fedora
+- **Package availability**: Some packages may be newer/different versions
+- **Updates**: Fedora moves quickly; some package names may change
+
+#### openSUSE
+- **Repository refresh**: May take longer due to repository metadata
+- **Package patterns**: Uses pattern:devel_basis instead of individual development packages
 
 ### Post-Installation
-- If commands aren't found, restart your terminal
-- For Docker issues on WSL, restart your WSL session
-- Configuration templates are in `~/.config/*/config`
+- **Commands not found**: Restart your terminal or run `source ~/.bashrc`
+- **Docker issues on WSL**: Restart your WSL session
+- **Configuration**: Templates are in `~/.config/*/config`
+- **Package manager**: Run distribution detection: `./lib/distro_detect.sh --verbose`
+
+### Common Solutions
+```bash
+# Re-run distribution detection
+./lib/distro_detect.sh
+
+# Test package manager
+./lib/package_manager.sh
+
+# Update system manually
+./system_manager/update_system.sh
+
+# Check Docker installation
+docker --version
+docker compose version
+```
 
 ## 🤝 Contributing
 
-Feel free to fork this repository and customize it for your needs! If you find bugs or have suggestions, please open an issue.
+Feel free to fork this repository and customize it for your needs!
+
+### Reporting Issues
+- **Distribution compatibility**: Report new distributions or version issues
+- **Package mapping**: Suggest better cross-distribution package alternatives
+- **Installation failures**: Include distribution info and log files
+- **Enhancement requests**: Ideas for better cross-platform support
+
+### Contributing
+- **New distributions**: Add support for additional Linux distributions
+- **Package improvements**: Better package name mappings and fallbacks
+- **Testing**: Multi-distribution testing and validation
+- **Documentation**: Distribution-specific guides and troubleshooting
+
+Please open an issue on GitHub with:
+1. Your Linux distribution and version (`cat /etc/os-release`)
+2. Error logs from `/tmp/linux_setup_*.log`
+3. Steps to reproduce the issue
 
 ## 📄 License
 

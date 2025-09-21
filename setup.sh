@@ -16,6 +16,13 @@ set -e
 set -u
 set -o pipefail
 
+# --- Load Library Functions ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./lib/distro_detect.sh
+source "$SCRIPT_DIR/lib/distro_detect.sh"
+# shellcheck source=./lib/package_manager.sh
+source "$SCRIPT_DIR/lib/package_manager.sh"
+
 # --- Constants and Configuration ---
 readonly SCRIPT_NAME="$(basename "${0}")"
 readonly REPO_URL="https://github.com/bdfabrications/Linux_Setup.git"
@@ -61,6 +68,14 @@ is_wsl() {
 check_prerequisites() {
     local missing_tools=()
 
+    # Detect distribution first
+    if ! run_distribution_detection; then
+        log_error "Failed to detect Linux distribution"
+        exit 1
+    fi
+
+    log_info "Detected: $DISTRO_NAME ($DISTRO_FAMILY)"
+
     # Check for essential tools
     if ! command_exists curl; then missing_tools+=("curl"); fi
     if ! command_exists git; then missing_tools+=("git"); fi
@@ -68,19 +83,41 @@ check_prerequisites() {
 
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
         log_error "Missing essential tools: ${missing_tools[*]}"
-        log_error "Please install them manually first: sudo apt install ${missing_tools[*]}"
+        case "$PKG_MANAGER" in
+            apt)
+                log_error "Please install them manually first: sudo apt install ${missing_tools[*]}"
+                ;;
+            dnf)
+                log_error "Please install them manually first: sudo dnf install ${missing_tools[*]}"
+                ;;
+            yum)
+                log_error "Please install them manually first: sudo yum install ${missing_tools[*]}"
+                ;;
+            zypper)
+                log_error "Please install them manually first: sudo zypper install ${missing_tools[*]}"
+                ;;
+            *)
+                log_error "Please install them manually using your system's package manager"
+                ;;
+        esac
         exit 1
     fi
 
     # Check if we're running on a supported system
-    if [[ ! -f /etc/debian_version ]]; then
-        log_warning "This script is optimized for Debian/Ubuntu-based systems"
-        log_warning "It may not work correctly on other distributions"
+    if ! is_supported_distribution; then
+        log_warning "This script is optimized for Debian/Ubuntu and RHEL-based systems"
+        log_warning "Your distribution ($DISTRO_ID) may not be fully supported"
         read -p "Continue anyway? (y/N): " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             exit 1
         fi
+    fi
+
+    # Validate package manager
+    if ! validate_package_manager; then
+        log_error "Package manager validation failed"
+        exit 1
     fi
 }
 
@@ -88,18 +125,44 @@ install_core_dependencies() {
     log_info "Installing core system dependencies..."
 
     # Update package lists
-    sudo apt update
+    pkg_update
+
+    # Enable EPEL if on RHEL-based system
+    pkg_enable_epel
 
     # Core packages - essential for the entire setup
     local core_packages=(
-        build-essential git curl wget ca-certificates tar
-        python3 python3-pip python3-venv
-        figlet fzf ripgrep fd-find unzip jq
-        libfuse2  # Required for AppImages
-        lolcat    # For colorful output
+        "development-tools"
+        "git"
+        "curl"
+        "wget"
+        "tar"
+        "python3"
+        "python3-pip"
+        "figlet"
+        "fzf"
+        "ripgrep"
+        "fd"
+        "unzip"
+        "jq"
+        "lolcat"
     )
 
-    sudo apt install -y "${core_packages[@]}"
+    # Distribution-specific packages
+    case "$DISTRO_FAMILY" in
+        debian)
+            core_packages+=("ca-certificates" "python3-venv" "libfuse2")
+            ;;
+        rhel|fedora)
+            core_packages+=("ca-certificates" "python3-venv")
+            ;;
+        suse)
+            core_packages+=("ca-certificates" "python3-venv")
+            ;;
+    esac
+
+    # Install packages with cross-distribution mapping
+    pkg_install_mapped "${core_packages[@]}"
 
     # Create 'fd' symlink if needed (Debian-based systems use 'fdfind')
     if command_exists fdfind && ! command_exists fd; then

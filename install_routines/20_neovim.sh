@@ -1,14 +1,40 @@
 #!/bin/bash
 # install_routines/20_neovim.sh
-# Installs Neovim using the direct AppImage download link.
+# Installs Neovim using the direct AppImage download link - works across all distributions.
+
+# --- Load Library Functions ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/distro_detect.sh
+source "$SCRIPT_DIR/../lib/distro_detect.sh"
+# shellcheck source=../lib/package_manager.sh
+source "$SCRIPT_DIR/../lib/package_manager.sh"
 
 set -e
-echo "Starting Neovim installation..."
+
+# Detect distribution if not already done
+if [[ -z "$DISTRO_FAMILY" ]]; then
+    run_distribution_detection
+fi
+
+echo "Starting Neovim installation for $DISTRO_NAME ($DISTRO_FAMILY)..."
 
 # --- Cleanup: Remove any existing Neovim to avoid conflicts ---
 echo "Checking for and removing any existing Neovim installations..."
-# These commands will not fail if neovim isn't installed.
-sudo apt-get remove --purge neovim neovim-runtime -y > /dev/null 2>&1 || true
+
+# Remove package-managed Neovim installations (distribution-specific)
+case "$DISTRO_FAMILY" in
+    debian)
+        sudo apt-get remove --purge neovim neovim-runtime -y > /dev/null 2>&1 || true
+        ;;
+    rhel|fedora)
+        sudo $PKG_MANAGER remove -y neovim > /dev/null 2>&1 || true
+        ;;
+    suse)
+        sudo zypper remove -y neovim > /dev/null 2>&1 || true
+        ;;
+esac
+
+# Remove any manually installed nvim binary
 sudo rm -f /usr/local/bin/nvim
 
 # --- Installation ---

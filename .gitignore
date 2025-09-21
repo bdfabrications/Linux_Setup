@@ -25,3 +25,15 @@ dist/
 
 # --- NEW: Dev Container files ---
 .devcontainer/
+
+# Test logs and temporary files
+test_logs/
+*.log
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary files
+/tmp/
+*.tmp
