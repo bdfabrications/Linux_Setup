@@ -123,10 +123,20 @@ pkg_install_single() {
             sudo apt install -y "$package"
             ;;
         dnf)
-            sudo dnf install -y "$package"
+            # Handle group installations for DNF
+            if [[ "$package" =~ ^@.* ]]; then
+                sudo dnf groupinstall -y "$package"
+            else
+                sudo dnf install -y "$package"
+            fi
             ;;
         yum)
-            sudo yum install -y "$package"
+            # Handle group installations for YUM
+            if [[ "$package" =~ ^@.* ]]; then
+                sudo yum groupinstall -y "$package"
+            else
+                sudo yum install -y "$package"
+            fi
             ;;
         zypper)
             sudo zypper install -y "$package"
@@ -352,7 +362,7 @@ get_package_name() {
         dnf|yum)
             case "$generic_name" in
                 "build-essential") echo "@development-tools" ;;
-                "development-tools") echo "@'Development Tools'" ;;  # Use proper group name with quotes
+                "development-tools") echo "@'Development Tools'" ;;  # Use group syntax for RHEL
                 "python3-dev") echo "python3-devel" ;;
                 "python3-venv") echo "python3-devel" ;;  # python3-venv functionality is included in python3-devel on RHEL
                 "libssl-dev") echo "openssl-devel" ;;
