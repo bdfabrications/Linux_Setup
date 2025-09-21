@@ -353,11 +353,13 @@ get_package_name() {
             case "$generic_name" in
                 "build-essential") echo "@development-tools" ;;
                 "python3-dev") echo "python3-devel" ;;
+                "python3-venv") echo "python3-devel" ;;  # python3-venv functionality is included in python3-devel on RHEL
                 "libssl-dev") echo "openssl-devel" ;;
                 "fd-find") echo "fd-find" ;;
                 "g++") echo "gcc-c++" ;;
                 "pkg-config") echo "pkgconfig" ;;
                 "docker.io") echo "docker-ce" ;;
+                "lolcat") echo "" ;;  # lolcat not available in RHEL repos, will be skipped
                 *) echo "$generic_name" ;;
             esac
             ;;
@@ -400,10 +402,21 @@ pkg_install_mapped() {
     for generic_name in "${generic_names[@]}"; do
         local mapped_name
         mapped_name=$(get_package_name "$generic_name")
-        distribution_packages+=("$mapped_name")
+
+        # Skip empty package names (packages not available on this distribution)
+        if [[ -n "$mapped_name" ]]; then
+            distribution_packages+=("$mapped_name")
+        else
+            pkg_log_warning "Package '$generic_name' not available on $DISTRO_FAMILY, skipping..."
+        fi
     done
 
-    pkg_install "${distribution_packages[@]}"
+    # Only attempt installation if we have packages to install
+    if [[ ${#distribution_packages[@]} -gt 0 ]]; then
+        pkg_install "${distribution_packages[@]}"
+    else
+        pkg_log_info "No packages to install after filtering"
+    fi
 }
 
 # Add a repository (distribution-specific)
