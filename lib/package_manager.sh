@@ -446,12 +446,27 @@ pkg_enable_epel() {
         case "$PKG_MANAGER" in
             dnf)
                 if ! pkg_is_installed "epel-release"; then
-                    pkg_install_single "epel-release"
+                    # For RHEL 9 and newer (including RHEL 10), install EPEL from the official URL
+                    local major_version="${DISTRO_VERSION_ID%%.*}"
+                    if [[ "$major_version" -ge 9 ]] 2>/dev/null; then
+                        pkg_log_info "Installing EPEL for RHEL ${major_version} from official repository..."
+                        sudo dnf install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${major_version}.noarch.rpm"
+                    else
+                        # For older RHEL versions, try the traditional method first
+                        pkg_install_single "epel-release" || {
+                            pkg_log_warning "Standard EPEL installation failed, trying official repository..."
+                            sudo dnf install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${major_version}.noarch.rpm"
+                        }
+                    fi
                 fi
                 ;;
             yum)
                 if ! pkg_is_installed "epel-release"; then
-                    pkg_install_single "epel-release"
+                    # For RHEL 7 and 8, try traditional method first, then fallback to official URL
+                    pkg_install_single "epel-release" || {
+                        pkg_log_warning "Standard EPEL installation failed, trying official repository..."
+                        sudo yum install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${DISTRO_VERSION_ID%%.*}.noarch.rpm"
+                    }
                 fi
                 ;;
             *)
